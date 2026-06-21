@@ -1,0 +1,8 @@
+# Bu dosya Google AdSense (ve benzeri reklam ağları) için "ads.txt" standardı içindir.
+# AdSense hesabınız onaylandığında, Google size özel bir "publisher ID" verecek
+# (örn: pub-1234567890123456). O zaman aşağıdaki satırı şu formatta GERÇEK ID'nizle
+# güncelleyip yayına alın:
+#
+# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
+#
+# Şu an bu dosya placeholder'dır — AdSense onayı gelene kadar boş/yorum satırlı kalabilir.
