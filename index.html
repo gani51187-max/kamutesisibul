@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kamu Tesisi Bul — Kamu Sosyal Tesisleri Rehberi</title>
+<meta name="description" content="Türkiye'nin 81 ilindeki öğretmenevi, polisevi, orduevi, misafirhane ve dinlenme tesislerini tek yerden bulun. 200+ kamu sosyal tesisi: adres, telefon, fiyat ve kimlerin kalabileceği bilgisiyle.">
+<meta name="keywords" content="öğretmenevi, polisevi, orduevi, misafirhane, kamu sosyal tesisleri, kamu konaklama">
+<link rel="canonical" href="https://kamutesisibul.com/">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Kamu Tesisi Bul — Kamu Sosyal Tesisleri Rehberi">
+<meta property="og:description" content="Türkiye'nin 81 ilindeki öğretmenevi, polisevi, orduevi ve misafirhaneleri tek yerden bulun — adres, telefon ve fiyat bilgisiyle.">
+<meta property="og:locale" content="tr_TR">
+
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kamu Tesisi Bul — Kamu Sosyal Tesisleri Rehberi">
+<meta name="twitter:description" content="Türkiye'nin 81 ilindeki öğretmenevi, polisevi, orduevi ve misafirhaneleri tek yerden bulun.">
+
+<meta name="theme-color" content="#1B2A4A">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%231B2A4A'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle' fill='%23F2EEE3' font-family='Georgia,serif'%3E%F0%9F%8F%9B%EF%B8%8F%3C/text%3E%3C/svg%3E">
+
+<!--
+  KURULUM NOTU
+  1) Aşağıda "FIREBASE_CONFIG" alanına kendi Firebase projenin config bilgilerini yapıştır.
+  2) Firestore'da "tesisler" adında bir koleksiyon oluştur (ilk kayıt admin panelden eklenince otomatik oluşur).
+  3) Config boş bırakılırsa site DEMO veriyle (örnek tesisler) çalışır, admin eklemeleri sayfa
+     yenilenince kaybolur — sadece arayüzü denemek için.
+  4) ⚠️ ÖNEMLİ: Admin şifresi (ADMIN_PASS) şu an düz metin olarak sayfa kaynağında duruyor — bu SADECE
+     demo/test amaçlıdır. Firebase config'i doldurup siteyi CANLIYA ALMADAN ÖNCE bu admin panelini
+     ya tamamen kaldır ya da Firebase Authentication (e-posta/şifre girişi) ile değiştir. Aksi halde
+     herkes "view source" ile şifreni görüp senin veritabanına yazabilir.
+-->
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+
+<style>
+  :root{
+    --lacivert:#1B2A4A;
+    --lacivert-2:#243a63;
+    --kagit:#F2EEE3;
+    --kart:#FBF9F3;
+    --muhur:#B33B2E;
+    --ege:#2E6F71;
+    --kraft:#C9A77C;
+    --ink:#2A2A28;
+    --ink-soft:#5b574c;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--kagit);
+    color:var(--ink);
+    font-family:'Work Sans', sans-serif;
+    font-size:15px;
+    line-height:1.5;
+  }
+  h1,h2,h3{font-family:'Fraunces', serif; margin:0;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  a{color:var(--lacivert);}
+  button{font-family:'Work Sans', sans-serif; cursor:pointer;}
+  .hidden{display:none !important;}
+
+  /* ---------- Letterhead ---------- */
+  .letterhead{
+    background:var(--lacivert);
+    color:var(--kagit);
+    padding:28px 24px 22px;
+    display:flex;
+    align-items:center;
+    gap:18px;
+    border-bottom:4px solid var(--muhur);
+  }
+  .seal{flex:0 0 auto; width:56px; height:56px;}
+  .seal svg{width:100%; height:100%;}
+  .title-block h1{font-size:28px; font-weight:700; letter-spacing:.3px;}
+  .title-block .tagline{
+    margin:4px 0 0; font-size:12.5px; letter-spacing:1.6px; text-transform:uppercase;
+    color:#cfd6e6; font-family:'IBM Plex Mono', monospace;
+  }
+
+  /* ---------- Ticket stat strip ---------- */
+  .ticket-strip{
+    max-width:1080px; margin:-18px auto 0; position:relative; z-index:2;
+    background:var(--kart);
+    display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--kraft);
+    box-shadow:0 6px 18px rgba(27,42,74,.12);
+    padding:14px 10px;
+    gap:0;
+  }
+  .ticket-strip .stat{flex:1; text-align:center; padding:0 12px;}
+  .ticket-strip .num{display:block; font-family:'Fraunces', serif; font-size:26px; font-weight:700; color:var(--lacivert);}
+  .ticket-strip .label{display:block; font-size:11px; letter-spacing:1.2px; text-transform:uppercase; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace;}
+  .perf{
+    flex:0 0 auto; width:1px; align-self:stretch; margin:0 4px;
+    background-image:radial-gradient(circle, var(--kagit) 3px, transparent 3.2px);
+    background-size:14px 14px; background-position:center;
+    background-repeat:repeat-y;
+  }
+
+  /* ---------- Controls ---------- */
+  .controls{
+    max-width:1080px; margin:22px auto 0; padding:0 16px;
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+  }
+  .controls input, .controls select{
+    border:1px solid var(--kraft); background:var(--kart); color:var(--ink);
+    padding:10px 12px; font-size:14px; border-radius:var(--radius);
+  }
+  #searchInput{flex:1 1 220px; min-width:180px;}
+  .controls select{flex:0 0 auto;}
+  .view-toggle{display:flex; border:1px solid var(--lacivert); border-radius:var(--radius); overflow:hidden; margin-left:auto;}
+  .view-toggle button{
+    background:var(--kart); border:none; padding:10px 16px; font-size:13px; font-weight:600;
+    color:var(--lacivert); letter-spacing:.4px;
+  }
+  .view-toggle button.active{background:var(--lacivert); color:#fff;}
+  .near-btn{
+    border:1px solid var(--muhur); background:var(--kart); color:var(--muhur);
+    padding:10px 14px; font-size:13px; font-weight:600; border-radius:var(--radius);
+    white-space:nowrap;
+  }
+  .near-btn.active{background:var(--muhur); color:#fff;}
+  .near-btn:disabled{opacity:.6; cursor:wait;}
+  .dist-badge{
+    display:inline-block; font-size:11px; font-family:'IBM Plex Mono', monospace;
+    background:var(--ege); color:#fff; padding:2px 7px; border-radius:var(--radius);
+    margin-left:6px; vertical-align:middle;
+  }
+
+  /* ---------- Main / grid ---------- */
+  main{max-width:1080px; margin:20px auto 60px; padding:0 16px;}
+  .grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:18px;
+  }
+  .empty-state{
+    text-align:center; padding:50px 20px; color:var(--ink-soft);
+    border:1px dashed var(--kraft); background:var(--kart);
+  }
+  .empty-state h3{font-size:18px; margin-bottom:6px; color:var(--ink);}
+
+  /* ---------- Ticket card ---------- */
+  .ticket{
+    background:var(--kart); border:1px solid var(--kraft); position:relative;
+    display:flex; flex-direction:column;
+  }
+  .ticket-perf{height:9px; background-image:radial-gradient(circle, var(--kagit) 4px, transparent 4.2px); background-size:16px 16px; background-position:center;}
+  .ticket-body{padding:16px; flex:1; position:relative;}
+  .stamp{
+    position:absolute; top:14px; right:14px; width:42px; height:42px; border-radius:50%;
+    border:2px dashed var(--ege); display:flex; align-items:center; justify-content:center;
+    font-size:19px; color:var(--ege); transform:rotate(-6deg); opacity:.9;
+  }
+  .ticket-body h3{font-size:17px; line-height:1.25; padding-right:46px; margin-bottom:6px;}
+  .ticket-body .kurum{font-size:12.5px; color:var(--ink-soft); margin:0 0 8px;}
+  .ticket-body .loc{font-size:13px; margin:0 0 10px; font-weight:500;}
+  .kategori-badge{
+    display:inline-block; font-size:11px; letter-spacing:.5px; text-transform:uppercase;
+    background:var(--lacivert); color:#fff; padding:3px 8px; border-radius:var(--radius);
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .ticket-foot{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 16px; border-top:1px dashed var(--kraft);
+  }
+  .serial{font-size:11px; color:var(--ink-soft);}
+  .detay-btn{
+    background:none; border:none; color:var(--muhur); font-weight:600; font-size:13px;
+  }
+  .detay-btn:hover{text-decoration:underline;}
+
+  /* ---------- Map ---------- */
+  #mapView{height:560px; border:1px solid var(--kraft);}
+  #map{height:100%; width:100%;}
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(27,42,74,.55); display:flex;
+    align-items:center; justify-content:center; padding:18px; z-index:50;
+  }
+  .modal-box{
+    background:var(--kart); max-width:480px; width:100%; max-height:86vh; overflow-y:auto;
+    border-top:5px solid var(--muhur); position:relative;
+  }
+  .modal-close{
+    position:absolute; top:10px; right:12px; background:none; border:none; font-size:22px;
+    color:var(--ink-soft); line-height:1;
+  }
+  .modal-box .inner{padding:26px 22px 22px;}
+  .modal-box h2{font-size:21px; margin-bottom:4px; padding-right:24px;}
+  .modal-box .m-kurum{color:var(--ink-soft); font-size:13px; margin-bottom:16px;}
+  .m-row{display:flex; gap:10px; padding:9px 0; border-bottom:1px solid #eae5d6; font-size:13.5px;}
+  .m-row .m-label{flex:0 0 110px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:.5px; padding-top:1px;}
+  .m-row .m-val{flex:1;}
+  .m-actions{display:flex; gap:10px; margin-top:18px;}
+  .btn{
+    display:inline-block; padding:10px 16px; border-radius:var(--radius); font-size:13.5px; font-weight:600;
+    text-decoration:none; text-align:center; border:1px solid var(--lacivert);
+  }
+  .btn-primary{background:var(--lacivert); color:#fff;}
+  .btn-ghost{background:none; color:var(--lacivert);}
+
+  /* ---------- Footer / admin ---------- */
+  footer{max-width:1080px; margin:0 auto 50px; padding:0 16px; text-align:center;}
+  footer p{font-size:12.5px; color:var(--ink-soft);}
+  #adminToggle{background:none; border:none; color:var(--ink-soft); text-decoration:underline; font-size:12.5px;}
+  #adminPanel{
+    margin-top:18px; text-align:left; background:var(--kart); border:1px solid var(--kraft); padding:20px;
+  }
+  #adminPanel h3{font-size:16px; margin-bottom:14px;}
+  #adminPanel .frow{display:flex; flex-direction:column; gap:4px; margin-bottom:12px;}
+  #adminPanel label{font-size:11.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace;}
+  #adminPanel input, #adminPanel select, #adminPanel textarea{
+    border:1px solid var(--kraft); padding:9px 10px; font-size:14px; font-family:'Work Sans',sans-serif; background:#fff;
+  }
+  #adminPanel .frow-2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  #adminGrid{display:none; grid-template-columns:1fr 1fr; gap:0;}
+  .pass-row{display:flex; gap:8px; margin-bottom:14px;}
+  .pass-row input{flex:1;}
+  #saveMsg{font-size:12.5px; color:var(--ege); margin-top:8px;}
+
+  @media (max-width:640px){
+    .letterhead{padding:22px 16px;}
+    .title-block h1{font-size:21px;}
+    .ticket-strip{flex-wrap:wrap;}
+    .ticket-strip .perf{display:none;}
+    .ticket-strip .stat{flex:1 1 30%;}
+    #adminPanel .frow-2{grid-template-columns:1fr;}
+    .view-toggle{margin-left:0;}
+  }
+</style>
+</head>
+<body>
+
+<header class="letterhead">
+  <div class="seal">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="46" fill="none" stroke="#F2EEE3" stroke-width="2.5"/>
+      <circle cx="50" cy="50" r="36" fill="none" stroke="#B33B2E" stroke-width="2"/>
+      <path d="M50 24 L58 46 L50 76 L42 46 Z" fill="#F2EEE3"/>
+      <circle cx="50" cy="50" r="5" fill="#B33B2E"/>
+    </svg>
+  </div>
+  <div class="title-block">
+    <h1>Kamu Tesisi Bul</h1>
+    <p class="tagline">Kamu Kurumları Sosyal Tesisleri Rehberi</p>
+  </div>
+</header>
+
+<section class="ticket-strip">
+  <div class="stat"><span class="num" id="statTotal">0</span><span class="label">Tesis</span></div>
+  <div class="perf"></div>
+  <div class="stat"><span class="num" id="statIl">0</span><span class="label">İl</span></div>
+  <div class="perf"></div>
+  <div class="stat"><span class="num" id="statKurum">0</span><span class="label">Kurum</span></div>
+</section>
+
+<section class="controls">
+  <input id="searchInput" type="text" placeholder="Tesis, kurum veya il ara...">
+  <select id="ilFilter"><option value="">Tüm İller</option></select>
+  <select id="katFilter"><option value="">Tüm Türler</option></select>
+  <button id="nearMeBtn" class="near-btn">📍 Bana Yakın Olanlar</button>
+  <div class="view-toggle">
+    <button data-view="list" class="active">Liste</button>
+    <button data-view="map">Harita</button>
+  </div>
+</section>
+
+<main>
+  <section id="listView" class="grid"></section>
+  <section id="mapView" class="hidden"><div id="map"></div></section>
+</main>
+
+<div id="detailOverlay" class="modal-overlay hidden"></div>
+
+<footer>
+  <p id="dataModeNote">Veri kaynağı: Google Places + resmi kaynak taraması (başlangıç seti, 11 tesis)</p>
+  <p style="margin-top:10px; max-width:560px; margin-left:auto; margin-right:auto;">Bu site resmi bir kurum değildir; bağımsız olarak derlenmiş bir rehberdir. Adres, telefon ve fiyat bilgileri zaman içinde değişebilir — konaklamadan önce ilgili tesisi arayarak teyit etmenizi öneririz. Bir hata fark ederseniz <a href="mailto:gani51187@gmail.com">bize bildirin</a>.</p>
+  <button id="adminToggle">Yönetici Girişi</button>
+  <div id="adminPanel" class="hidden">
+    <div class="pass-row" id="passRow">
+      <input id="adminPass" type="password" placeholder="Yönetici şifresi">
+      <button class="btn btn-primary" id="passSubmit">Giriş</button>
+    </div>
+    <div id="adminGrid">
+      <div>
+        <h3>Yeni Tesis Ekle</h3>
+        <form id="addForm">
+          <div class="frow"><label>Tesis Adı</label><input required id="f_ad"></div>
+          <div class="frow-2">
+            <div class="frow"><label>Bağlı Kurum</label><input required id="f_kurum"></div>
+            <div class="frow"><label>Tür</label>
+              <select id="f_kategori">
+                <option>Misafirhane</option><option>Dinlenme Tesisi / Kamp</option>
+                <option>Öğretmenevi</option><option>Polisevi</option><option>Orduevi</option>
+                <option>Düğün Salonu</option><option>Spor Tesisi</option><option>Diğer</option>
+              </select>
+            </div>
+          </div>
+          <div class="frow-2">
+            <div class="frow"><label>İl</label><input required id="f_il"></div>
+            <div class="frow"><label>İlçe</label><input id="f_ilce"></div>
+          </div>
+          <div class="frow"><label>Adres</label><input id="f_adres"></div>
+          <div class="frow-2">
+            <div class="frow"><label>Enlem (lat)</label><input id="f_lat" placeholder="örn. 36.8841"></div>
+            <div class="frow"><label>Boylam (lng)</label><input id="f_lng" placeholder="örn. 30.7056"></div>
+          </div>
+          <div class="frow-2">
+            <div class="frow"><label>Telefon</label><input id="f_tel"></div>
+            <div class="frow"><label>E-posta</label><input id="f_eposta"></div>
+          </div>
+          <div class="frow"><label>Kimler Kullanabilir</label><input id="f_kimler" placeholder="örn. Personel, emekli, yakınları"></div>
+          <div class="frow"><label>Ücret / Tarife Notu</label><input id="f_ucret"></div>
+          <div class="frow"><label>Açıklama</label><textarea id="f_aciklama" rows="3"></textarea></div>
+          <button type="submit" class="btn btn-primary">Tesisi Kaydet</button>
+          <div id="saveMsg"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+<!-- Firebase (compat SDK) — config boşsa otomatik demo moda düşer -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+/* =========================================================
+   FIREBASE CONFIG — kendi projenin bilgilerini buraya yapıştır.
+   Boş bırakırsan site DEMO veriyle çalışır.
+   ========================================================= */
+const FIREBASE_CONFIG = {
+  // apiKey: "...",
+  // authDomain: "...",
+  // projectId: "...",
+  // storageBucket: "...",
+  // messagingSenderId: "...",
+  // appId: "..."
+};
+
+const ADMIN_PASS = "tesis2026"; // DEMO amaçlı — canlıya çıkmadan önce değiştir / Firebase Auth kullan.
+
+/* ---------- Başlangıç veri seti (Google Places + resmi kaynak taraması ile derlendi, Haziran 2026) ---------- */
+const OGRETMENEVI_KIMLER = "MEB personeli ve emeklileri ile yakınları (en avantajlı tarife) → diğer kamu personeli ve emekliler (indirimli) → öğrenciler → sivil vatandaşlar (tam ücret, yer kalırsa).";
+const OGRETMENEVI_UCRET = "Hazine ve Maliye Bakanlığı'nın yıllık 'Kamu Sosyal Tesisleri Tebliği'ne göre kademeli tarife uygulanır. Kesin gecelik fiyat tesisin kendi duyuru sayfasında veya telefonla teyit edilmelidir.";
+const POLISEVI_KIMLER = "Emniyet personeli, emekli polisler, şehit/gazi yakınları önceliklidir; doluluk durumuna göre diğer kamu personeli de kabul edilebilir.";
+const POLISEVI_UCRET = "Teşkilat personeli / kamu personeli / sivil olmak üzere kademeli tarife uygulanır. Net fiyat için tesis aranmalıdır.";
+const ORDUEVI_KIMLER = "TSK personeli (subay/astsubay/uzman erbaş/sivil memur), emekliler ve hak sahibi yakınları (TSK Akıllı Kart sahipleri). Sivillerin girişi yetkili personel referansı olmadan mümkün değildir.";
+const ORDUEVI_UCRET = "Tesisin sınıfına (1-5) göre değişen tarife, Kamu Sosyal Tesisleri Tebliği kapsamında belirlenir; akıllı kart ücretleri MSB'nin sitesinde yıllık yayınlanır.";
+const DSI_KIMLER = "DSİ personeli, emeklileri ve birinci derece yakınları (anne/baba/çocuk/eş) en avantajlı 'kamu' tarifesinden yararlanır; diğer kamu personeli de kamu tarifesine girer; sivil vatandaşlar ve turistler doluluk durumuna göre daha yüksek 'kurum dışı' tarifeyle kabul edilir.";
+const DSI_UCRET = "Kamu personeli / kamu dışı (sivil) olmak üzere iki kademeli tarife uygulanır; çocuklar için Kamu Sosyal Tesisleri Tebliği'ndeki yaş indirimleri geçerlidir. Net fiyat ve doluluk için tesis mutlaka aranmalıdır, telefon yoğun olabilir.";
+const TCDD_KIMLER = "TCDD personeli ve emeklileri ile yakınları öncelikli; bazı tesislerde (özellikle eğitim merkezleri) eğitim faaliyeti varsa konaklama verilmeyebilir, sivil misafir kontenjanı sınırlı olabilir.";
+const TCDD_UCRET = "Kamu personeli / sivil olmak üzere kademeli tarife uygulanır; KDV ve %2 konaklama vergisi dahildir, 10+ kişilik gruplarda indirim olabilir. Net fiyat tesisten teyit edilmelidir.";
+const KARAYOLLARI_KIMLER = "Karayolları Genel Müdürlüğü personeli ve emeklileri öncelikli; diğer kamu personeli ve sivil vatandaşlar doluluk durumuna göre kabul edilir.";
+const KARAYOLLARI_UCRET = "Kamu personeli için indirimli, sivil vatandaşlar için daha yüksek tarife uygulanır; net fiyat ve doluluk için tesis aranmalıdır.";
+const BANKA_KIMLER = "Öncelik bankanın kendi personeli, emeklileri ve birinci derece yakınlarındadır. ⚠️ Kaynaklar çelişkili: bazı şubelerin kurum dışına hiç hizmet vermediği, bazılarının doluluk durumuna göre sivil misafir aldığı belirtiliyor — gitmeden mutlaka arayıp teyit edin.";
+const BANKA_UCRET = "Kurum personeli için düşük sabit ücret; kurum dışı misafir kabul eden tesislerde ayrı (daha yüksek) sivil tarife uygulanır. Net bilgi tesisten alınmalıdır.";
+const DIYANET_KIMLER = "Diyanet İşleri Başkanlığı personeli ve aileleri önceliklidir; yer müsaitliğine göre diğer kamu personeli ve sivil vatandaşlar da otel konforunda konaklayabilir.";
+const DIYANET_UCRET = "Personel / kamu personeli / sivil vatandaş olmak üzere kademeli tarife, yılda iki kez (Ocak/Temmuz) güncellenir. Net fiyat için tesis aranmalıdır.";
+const OGM_KIMLER = "Orman Genel Müdürlüğü (Tarım ve Orman Bakanlığı) personeli, emeklileri ve yakınları öncelikli; diğer kamu personeli ve sivil vatandaşlar genelde daha yüksek tarifeyle ve doluluk durumuna göre kabul edilir.";
+const OGM_UCRET = "Kamu personeli / kamu dışı olmak üzere iki kademeli tarife, Kamu Sosyal Tesisleri Tebliği'ne göre belirlenir; çocuklar için yaş indirimi uygulanır. Net fiyat tesisten teyit edilmelidir.";
+const ADALET_KIMLER = "Adalet Bakanlığı personeli (hakim, savcı, idari personel), emeklileri ve yakınları öncelikli; bazı tesisler sadece teşkilat mensuplarına açık olabilir, doluluk durumuna göre diğer kamu personeli de kabul edilebilir.";
+const ADALET_UCRET = "Kamu mensubu / misafir (sivil) olmak üzere kademeli tarife; çocuklar için yaş bazlı indirim uygulanır. Net fiyat ve müsaitlik tesisten teyit edilmelidir.";
+const KIT_KIMLER = "Kurumun kendi personeli, emeklileri ve birinci derece yakınları öncelikli; diğer kamu personeli doluluk durumuna göre kabul edilebilir, sivil vatandaş kabulü tesise göre değişir.";
+const KIT_UCRET = "Kurum personeli için düşük sabit ücret; diğer kamu personeli/sivil için ayrı (daha yüksek) tarife olabilir. Net bilgi ve müsaitlik için tesis aranmalıdır.";
+const JANDARMA_KIMLER = "Jandarma Genel Komutanlığı personeli (subay/astsubay/uzman erbaş), emeklileri ve aileleri asıl hak sahibidir. ⚠️ Güvenlik gerekçesiyle sivil vatandaşlar tek başına konaklayamaz; bir hak sahibi refakatinde veya özel organizasyon (düğün/nişan) davetlisi olarak kullanılabilir, girişte askeri/emekli kimlik kartı zorunludur.";
+const JANDARMA_UCRET = "Rütbeye ve oda tipine göre değişen, piyasaya kıyasla oldukça ekonomik tarife. Net fiyat ve sivil kontenjan durumu için tesis aranmalıdır.";
+const SAGLIK_KIMLER = "Hekimevlerinde öncelik Sağlık Bakanlığı personeli ve 1. derece yakınlarına aittir; genel misafirhanelerde tüm kamu personeli indirimli, sivil vatandaşlar indirimsiz tarifeyle kabul edilir.";
+const SAGLIK_UCRET = "Kamu personeli / sivil olmak üzere iki kademeli tarife; doluluk durumuna göre değişir, net fiyat için tesis aranmalıdır.";
+const DHMI_KIMLER = "DHMİ personeli öncelikli; misafirhanenin müsait olması halinde diğer kamu kurumu personeli ve sivil vatandaşlar da ücretini ödeyerek kalabilir.";
+const DHMI_UCRET = "Kamu personeli / sivil olmak üzere kademeli tarife; ücretler girişte peşin tahsil edilir. Net fiyat için tesis aranmalıdır.";
+const METEOROLOJI_KIMLER = "Meteoroloji Genel Müdürlüğü personeli, emeklileri ve yakınları öncelikli; diğer kamu personeli de kamu personeli tarifesinden yararlanır, şehit/gazi yakınlarına aynı tarife uygulanır.";
+const METEOROLOJI_UCRET = "Kamu Sosyal Tesislerine İlişkin Tebliğ'e göre belirlenen kademeli tarife; ek olarak %2 konaklama vergisi alınır. Net fiyat için tesis aranmalıdır.";
+const SAYISTAY_KIMLER = "Sayıştay Başkanlığı personeli, emeklileri ve yakınları öncelikli; diğer kamu kurumu personeli de kamu personeli tarifesinden yararlanabilir, doluluk durumuna göre değişir.";
+const SAYISTAY_UCRET = "Kamu personeli / diğer kurum personeli olmak üzere kademeli tarife; tam pansiyon (kahvaltı+öğle+akşam) genelde dahildir. Net fiyat için tesis aranmalıdır.";
+const TRT_KIMLER = "TRT (Türkiye Radyo Televizyon Kurumu) personeli, emeklileri ve yakınları öncelikli; diğer kamu personeli kamu tarifesinden, doluluk durumuna göre sivil vatandaşlar da günübirlik veya konaklamalı yararlanabilir.";
+const TRT_UCRET = "Kamu personeli / sivil olmak üzere kademeli tarife; plaj, şezlong ve duş gibi hizmetler genelde ücrete dahildir, tesiste alkollü içecek satılmaz.";
+const ILBANK_KIMLER = "İller Bankası A.Ş. personeli, emeklileri ve yakınları öncelikli; diğer kamu personeli ve sivil vatandaşlar doluluk durumuna göre kabul edilir.";
+const ILBANK_UCRET = "Kamu personeli / sivil olmak üzere iki kademeli tarife, Kamu Sosyal Tesislerine İlişkin Tebliğ'e göre belirlenir. Net fiyat için tesis aranmalıdır.";
+const TAKAV_KIMLER = "Tapu ve Kadastro Genel Müdürlüğü personeli, emeklileri ve vakıf üyesi yakınları öncelikli; diğer kamu personeli doluluk durumuna göre kabul edilebilir.";
+const TAKAV_UCRET = "Üye/kamu personeli için düşük sabit ücret (örn. ~1250 TL/gece bildirilmiş); diğer kamu personeli için farklı tarife olabilir. Su gibi bazı ikramlar ek ücretli olabiliyor.";
+
+const DEMO_DATA = [
+  {ad:"Antalya Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Antalya", ilce:"Kepez", adres:"Kültür, 3801. Sk. No:2, 07090 Kepez/Antalya", lat:36.9030759, lng:30.6635988, tel:"+90 242 503 23 04", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"24 saat açık, otel birimi ve restoran/kafeterya bir aradadır.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Marmaris Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Muğla", ilce:"Marmaris", adres:"Siteler Mah., İsmet Kamil Öner Cd., 206. Sk. No:8, 48700 Marmaris/Muğla", lat:36.846451, lng:28.2545336, tel:"+90 252 413 24 11", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Sahil beldesinde, yaz sezonunda yoğun talep alır.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Ankara Gölbaşı Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Ankara", ilce:"Gölbaşı", adres:"Karşıyaka, Küme Evleri Sok., 06830 Gölbaşı/Ankara", lat:39.7521514, lng:32.7782833, tel:"+90 312 303 69 33", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Göl manzaralı geniş sosyal tesis; mangal alanı, çocuk oyun alanı ve restoran bulunur, rezervasyonla çalışır.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Marmaris Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Muğla", ilce:"Marmaris", adres:"Kemeraltı, 66. Sk. No:2, 48700 Marmaris/Muğla", lat:36.8528058, lng:28.2665893, tel:"+90 252 413 24 75", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Halk plajının karşısında, marina ve çarşıya yürüme mesafesinde.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Merkez Orduevi", kurum:"Milli Savunma Bakanlığı", kategori:"Orduevi", il:"Ankara", ilce:"Çankaya", adres:"Devlet, Türkocağı Cd. No:21, 06100 Çankaya/Ankara", lat:39.9131798, lng:32.8298225, tel:"+90 312 285 75 78", eposta:"", kimler:ORDUEVI_KIMLER, ucret:ORDUEVI_UCRET, aciklama:"Şehir merkezinde, restoran/kafeterya ve berber gibi ek hizmetler mevcuttur.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Gazi Orduevi", kurum:"Milli Savunma Bakanlığı", kategori:"Orduevi", il:"Ankara", ilce:"Çankaya", adres:"Söğütözü, 06797 Çankaya/Ankara", lat:39.927872, lng:32.7897478, tel:"+90 312 212 60 70", eposta:"", kimler:ORDUEVI_KIMLER, ucret:ORDUEVI_UCRET, aciklama:"Şehir merkezine biraz uzak, geniş ve sakin bir tesis.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Aksaz Sosyal Hizmetler Misafirhanesi", kurum:"Milli Savunma Bakanlığı (Deniz Kuvvetleri)", kategori:"Misafirhane", il:"Muğla", ilce:"Marmaris", adres:"Adaköy, 48700 Marmaris/Muğla", lat:36.836382, lng:28.3704614, tel:"", eposta:"", kimler:"TSK personeli, emeklileri ve hak sahibi yakınları; sivil giriş yönetmelik gereği mümkün değildir.", ucret:ORDUEVI_UCRET, aciklama:"Plaj kullanımı için de kimlik kartı zorunludur.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"SGK Kavaklıdere Eğitim Merkezi ve Misafirhanesi", kurum:"Sosyal Güvenlik Kurumu", kategori:"Misafirhane", il:"Ankara", ilce:"Çankaya", adres:"Remzi Oğuz Arık, 06540 Çankaya/Ankara", lat:39.9029266, lng:32.8593477, tel:"+90 312 468 28 48", eposta:"", kimler:"SGK personeli ve emeklileri ile yakınları öncelikli; sivil misafirler doluluk durumuna göre kabul edilebilir (kamu/sivil tarife farkı vardır).", ucret:"Kademeli kamu/sivil tarife uygulanır; net fiyat için tesis aranmalıdır.", aciklama:"Şehir merkezinde, eğitim amaçlı kullanım önceliklidir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bodrum Belediyesi Nikah Salonu", kurum:"Bodrum Belediyesi", kategori:"Düğün Salonu", il:"Muğla", ilce:"Bodrum", adres:"Çarşı, Türk Kuyusu Cd. No:9, 48400 Bodrum/Muğla", lat:37.034887, lng:27.4299221, tel:"+90 444 0048", eposta:"", kimler:"Nikah başvurusu yapan tüm vatandaşlar; randevu belediye nikah memurluğu üzerinden alınır.", ucret:"Belediye meclis kararıyla belirlenen sabit ücret; güncel tutarı belediyeden teyit edin.", aciklama:"Rezervasyon için belediye santraline yönlendirilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"İstanbul Üniversitesi Baltalimanı Sosyal Tesisleri", kurum:"İstanbul Üniversitesi", kategori:"Misafirhane", il:"İstanbul", ilce:"Sarıyer", adres:"Baltalimanı, Balta Limanı Hisar Cd. No:58, 34470 Sarıyer/İstanbul", lat:41.0972046, lng:29.0534425, tel:"+90 212 277 99 16", eposta:"", kimler:"Üniversite personeli, kamu personeli ve emekliler; eski bir Boğaz köşkü/restoranı olarak hizmet verir.", ucret:"Kurumun kendi sosyal tesis fiyat listesine göre değişir.", aciklama:"Boğaz manzaralı, tarihi bir köşk içinde işletilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Marmara Üniversitesi Misafirhanesi", kurum:"Marmara Üniversitesi", kategori:"Misafirhane", il:"İstanbul", ilce:"Kadıköy", adres:"Eğitim, Fahrettin Kerim Gökay Cd. No:151/A, 34722 Kadıköy/İstanbul", lat:40.9858396, lng:29.0495568, tel:"+90 216 777 41 90", eposta:"", kimler:"Genellikle üniversite personeli, öğretim üyeleri ve öğrenciler önceliklidir.", ucret:"Kurumun kendi tarifesine göre değişir, diğer otellere göre daha uygun fiyatlıdır.", aciklama:"Kampüse yakın, sınırlı oda kapasitesi vardır.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"İLKSAN İzmir Konukevi", kurum:"İLKSAN (İlkokul Öğretmenleri Sağlık ve Sosyal Yardım Sandığı)", kategori:"Misafirhane", il:"İzmir", ilce:"Konak", adres:"Akdeniz, 1328. Sk. No:3, 35210 Konak/İzmir", lat:38.4238744, lng:27.1331481, tel:"+90 232 483 19 43", eposta:"", kimler:"İlkokul/ilköğretim öğretmenleri (İLKSAN üyeleri) ve emeklileri ile yakınları önceliklidir; diğer kamu personeli ve siviller doluluk durumuna göre kabul edilir.", ucret:"Üye/kamu personeli/sivil olmak üzere kademeli tarife; net fiyat için tesis aranmalıdır.", aciklama:"Çankaya metro istasyonuna yürüme mesafesinde, şehir merkezinde.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Selçuk Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"İzmir", ilce:"Selçuk", adres:"Atatürk, 1067. Sk. No:15, 35920 Selçuk/İzmir", lat:37.9474843, lng:27.3667194, tel:"+90 232 892 68 50", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Efes Müzesi'ne yürüme mesafesinde, sade ama merkezi bir konaklama seçeneği.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"İzmir Polisevi (Yeşiltepe)", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"İzmir", ilce:"Konak", adres:"Yeşiltepe, Mithatpaşa Cd. No:178, 35100 Konak/İzmir", lat:38.4128425, lng:27.121486, tel:"+90 232 483 66 11", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Kordon ve Saat Kulesi'ne yakın, deniz manzaralı.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"İzmir Polisevi Düğün Salonu", kurum:"Emniyet Genel Müdürlüğü", kategori:"Düğün Salonu", il:"İzmir", ilce:"Konak", adres:"Yeşiltepe, 35360 Konak/İzmir", lat:38.412868, lng:27.12165, tel:"", eposta:"", kimler:"Polis personeli ve yakınları öncelikli; kontenjan dahilinde diğer kamu personeli de organizasyon yapabilir.", ucret:"Rezervasyon ve fiyat bilgisi İzmir Polisevi santralinden alınır.", aciklama:"Polisevi kompleksi içinde, deniz manzaralı davet/düğün salonu.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bursa Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Bursa", ilce:"Osmangazi", adres:"Şehreküstü, 18. Okul Sok. No:4, 16050 Osmangazi/Bursa", lat:40.187527, lng:29.0599026, tel:"+90 224 224 21 62", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Şehir merkezinde, ekonomik fiyatlı bir konaklama seçeneği.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bursa Orduevi", kurum:"Milli Savunma Bakanlığı", kategori:"Orduevi", il:"Bursa", ilce:"Osmangazi", adres:"Osmangazi, Yiğitler Cd. No:12, 16040 Osmangazi/Bursa", lat:40.1874963, lng:29.057172, tel:"+90 224 220 13 99", eposta:"", kimler:ORDUEVI_KIMLER, ucret:ORDUEVI_UCRET, aciklama:"Bursa kale surlarına yakın, şehir manzaralı restoran/kafe bir aradadır.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Konya Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Konya", ilce:"Karatay", adres:"Şemsitebrizi, Mazhar Babalık Sk. No:3, 42030 Karatay/Konya", lat:37.8729154, lng:32.4951455, tel:"+90 332 351 22 65", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Tarihi merkeze yakın, akademik etkinlikler için de kullanılır.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Konya Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Konya", ilce:"Selçuklu", adres:"Horozluhan, Yeni İstanbul Cd. No:50, 42100 Selçuklu/Konya", lat:37.9314964, lng:32.5105551, tel:"+90 332 251 09 25", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Yeni bina, geniş otopark ve çocuk oyun alanı mevcuttur.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Adana Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Adana", ilce:"Seyhan", adres:"İstasyon Meydanı, Kurtuluş, Atatürk Cad. No:101, 01120 Seyhan/Adana", lat:37.0026684, lng:35.3183306, tel:"+90 322 453 31 58", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Tren istasyonu meydanında, şehir merkezinde.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Adana Orduevi", kurum:"Milli Savunma Bakanlığı", kategori:"Orduevi", il:"Adana", ilce:"Çukurova", adres:"Güzelyalı, 81038. Sk., 01170 Çukurova/Adana", lat:37.0392307, lng:35.3182725, tel:"+90 322 233 08 97", eposta:"", kimler:ORDUEVI_KIMLER, ucret:ORDUEVI_UCRET, aciklama:"Seyhan Baraj Gölü manzaralı, sadece askeri personele ve yakınlarına açıktır.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Trabzon Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Trabzon", ilce:"Ortahisar", adres:"Cumhuriyet, Gölcük Cd. No:1, 61030 Ortahisar/Trabzon", lat:41.0046195, lng:39.7224176, tel:"+90 462 322 36 57", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Düğün/davet organizasyonları için salon hizmeti de sunar.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Trabzon Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Trabzon", ilce:"Ortahisar", adres:"Vatan Caddesi, Yunus Emre, 1 Nolu Sokak No:1/A, 61010 Ortahisar/Trabzon", lat:40.9886403, lng:39.7894418, tel:"+90 462 334 46 29", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Havaalanına yakın, yeni binada hizmet verir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Eskişehir Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Eskişehir", ilce:"Odunpazarı", adres:"Akarbaşı Mahallesi, Remzi Korkut Sokak D:1, 26080 Odunpazarı/Eskişehir", lat:39.765923, lng:30.511713, tel:"", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Şehir merkezinde, turistik bölgelere yürüme mesafesinde.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Eskişehir Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Eskişehir", ilce:"Tepebaşı", adres:"Esentepe, Çevre Yolu No:358, 26210 Tepebaşı/Eskişehir", lat:39.7973396, lng:30.5181942, tel:"+90 222 322 36 36", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Çevre yolu üzerinde, merkezi konumda.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Samsun Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Samsun", ilce:"İlkadım", adres:"Kale, İstiklal Cd. No:31, 55030 İlkadım/Samsun", lat:41.2892199, lng:36.3311756, tel:"+90 362 431 25 46", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Kale mahallesinde, şehir merkezinde.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Samsun Astsubay Gazinosu", kurum:"Milli Savunma Bakanlığı", kategori:"Orduevi", il:"Samsun", ilce:"İlkadım", adres:"Kale, 55030 İlkadım/Samsun", lat:41.2911213, lng:36.3302347, tel:"", eposta:"", kimler:"Astsubay ve uzman erbaşlar ile emeklileri ve yakınları önceliklidir.", ucret:ORDUEVI_UCRET, aciklama:"Şehir merkezinde, kapasitesi sınırlı olabilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kayseri Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Kayseri", ilce:"Talas", adres:"Kiçiköy, Sağlık Cd. No:20, 38280 Talas/Kayseri", lat:38.6915255, lng:35.5557597, tel:"", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"⚠️ Yenileme çalışmaları nedeniyle dönemsel kapanmalar bildirilmiş; gitmeden önce arayarak teyit edin.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kayseri Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Kayseri", ilce:"Melikgazi", adres:"Erenköy, Erciyes Cad., 38050 Melikgazi/Kayseri", lat:38.6706018, lng:35.5038407, tel:"+90 352 341 34 15", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Erciyes yoluna yakın, kış sezonunda doluluk yüksek olabilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Gaziantep Öğretmenevi ve Akşam Sanat Okulu", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Gaziantep", ilce:"Şahinbey", adres:"15 Temmuz, Davut Gül Caddesi No:5, 27010 Şahinbey/Gaziantep", lat:37.0559645, lng:37.3131314, tel:"444 9 127", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Şehir merkezinde.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Gaziantep Orduevi (Hikmet Delibaş Kışlası)", kurum:"Milli Savunma Bakanlığı", kategori:"Orduevi", il:"Gaziantep", ilce:"Şahinbey", adres:"Hikmet Delibaş Kışlası, Beyazlar, Ordu Cd., 27070 Şahinbey/Gaziantep", lat:37.0588979, lng:37.359704, tel:"+90 342 336 12 41", eposta:"", kimler:ORDUEVI_KIMLER, ucret:ORDUEVI_UCRET, aciklama:"Kışla içinde, restoran/pastane/berber gibi ek hizmetler mevcut.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Mersin Suphi Öner Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Mersin", ilce:"Yenişehir", adres:"Dumlupınar, 1524. Sk. No:16, 33130 Yenişehir/Mersin", lat:36.7772018, lng:34.5820982, tel:"+90 324 328 81 11", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Akdeniz manzaralı, havuz ve plaj erişimi var.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Mersin Polisevi (Şehit Sedat Gezer)", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Mersin", ilce:"Mezitli", adres:"Deniz, Ziya Gökalp Cd. No:37, 33200 Mezitli/Mersin", lat:36.6844626, lng:34.4425884, tel:"+90 505 318 33 12", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Mezitli sahilinde, deniz manzaralı.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Diyarbakır Öğretmenevi ve Akşam Sanat Okulu", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Diyarbakır", ilce:"Yenişehir", adres:"Aziziye, 624. Sk., 21120 Yenişehir/Diyarbakır", lat:37.9497192, lng:40.1958468, tel:"+90 412 262 29 89", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Şehir merkezinde, Yenişehir ilçesinde.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Diyarbakır Orduevi", kurum:"Milli Savunma Bakanlığı", kategori:"Orduevi", il:"Diyarbakır", ilce:"Yenişehir", adres:"Kooperatifler, Elazığ Cd. 18-1/418, 21000 Yenişehir/Diyarbakır", lat:37.9257736, lng:40.2220027, tel:"", eposta:"", kimler:ORDUEVI_KIMLER, ucret:ORDUEVI_UCRET, aciklama:"2022'de yenilenen bina; şehit yakınlarına özel ilgi gösterildiği belirtiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Erzurum Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Erzurum", ilce:"Yakutiye", adres:"Lalapaşa, Çaykara Cd., 25100 Yakutiye/Erzurum", lat:39.9067382, lng:41.2677116, tel:"+90 442 235 45 25", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Şehir merkezinde.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Erzurum Orduevi", kurum:"Milli Savunma Bakanlığı", kategori:"Orduevi", il:"Erzurum", ilce:"Yakutiye", adres:"Lalapaşa, 25100 Yakutiye/Erzurum", lat:39.9066385, lng:41.2609892, tel:"", eposta:"", kimler:ORDUEVI_KIMLER, ucret:ORDUEVI_UCRET, aciklama:"⚠️ Kullanıcı yorumlarına göre bina depremden sonra hasar tespiti nedeniyle yıkılmış olabilir, geçici tesise yönlendirilebilirsiniz — gitmeden mutlaka arayın.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Van Şişli Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Van", ilce:"İpekyolu", adres:"Bahçıvan, Kazım Karabekir Blv. No:46, 65130 Merkez/İpekyolu/Van", lat:38.4998912, lng:43.3885795, tel:"+90 530 310 84 38", eposta:"", kimler:"Kamu personeli önceliklidir, ancak sivil misafirler de doluluk durumuna göre kabul edilir.", ucret:OGRETMENEVI_UCRET, aciklama:"Şehir merkezinde, park manzaralı.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Van Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Van", ilce:"İpekyolu", adres:"Vali Mithat Bey, İskele Cd. No:43, 65130 İpekyolu/Van", lat:38.5050159, lng:43.3891323, tel:"+90 505 318 65 25", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Şehir merkezinde.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Şanlıurfa Onikiler Öğretmenevi ve ASO", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Şanlıurfa", ilce:"Karaköprü", adres:"Akpıyar Mh. 4068 Sk., 63320 Karaköprü/Şanlıurfa", lat:37.2184947, lng:38.795354, tel:"+90 532 465 01 80", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Karaköprü ilçesinde, yeni bina.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Şanlıurfa Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Şanlıurfa", ilce:"Haliliye", adres:"Hamidiye, Merkez, Emniyet Cd., 63300 Haliliye/Şanlıurfa", lat:37.1725, lng:38.7991667, tel:"+90 414 316 30 46", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Haliliye ilçesinde.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"İzmit Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Kocaeli", ilce:"İzmit", adres:"Kozluk, Orduevi Sk. No:26, 41200 İzmit/Kocaeli", lat:40.7639732, lng:29.9131851, tel:"+90 262 321 06 34", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Körfez manzaralı.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Gölcük Subay Orduevi", kurum:"Milli Savunma Bakanlığı", kategori:"Orduevi", il:"Kocaeli", ilce:"Gölcük", adres:"Değirmendere, 41650 Gölcük/Kocaeli", lat:40.7277496, lng:29.805929, tel:"+90 262 414 90 52", eposta:"", kimler:ORDUEVI_KIMLER, ucret:ORDUEVI_UCRET, aciklama:"Plaj kullanımı olan deniz kenarı tesis.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Sakarya Büyükşehir Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Sakarya", ilce:"Adapazarı", adres:"Mithatpaşa, Kudüs Cd. No:45, 54100 Adapazarı/Sakarya", lat:40.7732864, lng:30.3901418, tel:"+90 264 277 37 69", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Şehir merkezinde.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Sakarya Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Sakarya", ilce:"Adapazarı", adres:"Maltepe, Önderevler Sokak 80/D, 54100 Adapazarı/Sakarya", lat:40.7361226, lng:30.377816, tel:"+90 264 276 54 50", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Merkeze yakın, geniş otopark mevcut.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"DSİ Kartal-Dragos Misafirhanesi ve Sosyal Tesisleri", kurum:"Devlet Su İşleri Genel Müdürlüğü", kategori:"Misafirhane", il:"İstanbul", ilce:"Kartal", adres:"Orhantepe, Özveri Sk. No:10, 34865 Kartal/İstanbul", lat:40.9031272, lng:29.1500434, tel:"+90 216 457 96 41", eposta:"", kimler:DSI_KIMLER, ucret:DSI_UCRET, aciklama:"Deniz manzaralı geniş bir tesis; havuz ve restoran de günübirlik kullanıma açık olabilir, rezervasyon telefonu çok yoğun olduğu bildiriliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"DSİ Çamlıca Misafirhanesi", kurum:"Devlet Su İşleri Genel Müdürlüğü", kategori:"Misafirhane", il:"İstanbul", ilce:"Üsküdar", adres:"Küçük Çamlıca, Libadiye Cd. Sosyal Tesisler No:54, 34696 Üsküdar/İstanbul", lat:41.008459, lng:29.0718248, tel:"+90 216 325 63 20", eposta:"", kimler:DSI_KIMLER, ucret:DSI_UCRET, aciklama:"Çamlıca Tepesi'ne yakın, şehrin iki yakasına da kolay erişimi olan merkezi bir konum.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"DSİ Gümüldür Eğitim Merkezi Şefliği", kurum:"Devlet Su İşleri Genel Müdürlüğü", kategori:"Dinlenme Tesisi / Kamp", il:"İzmir", ilce:"Seferihisar", adres:"Mersin Alanı, Temel Paşa Cd. No:137 D:25, 35485 Keler Köyü/Seferihisar/İzmir", lat:38.0756978, lng:26.9750377, tel:"+90 232 793 11 72", eposta:"", kimler:DSI_KIMLER, ucret:DSI_UCRET, aciklama:"⚠️ Geçmiş yıllarda deprem sonrası dönemsel olarak kapalı kaldığı kullanıcı yorumlarında belirtiliyor; gitmeden mutlaka arayıp açık olduğunu teyit edin. Plaj ve havuzu var, günübirlik giriş de mümkün.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"DSİ 5. Bölge Misafirhanesi (Eskişehir Yolu)", kurum:"Devlet Su İşleri Genel Müdürlüğü", kategori:"Misafirhane", il:"Ankara", ilce:"Çankaya", adres:"Mustafa Kemal, 2151/1. Cd. No:1, 06510 Çankaya/Ankara", lat:39.9110758, lng:32.7822114, tel:"", eposta:"", kimler:DSI_KIMLER, ucret:DSI_UCRET, aciklama:"⚠️ Kullanıcı yorumlarına göre tesis uzun süreli tadilat nedeniyle dönemsel kapanmalar yaşayabiliyor; gitmeden arayarak teyit edin. İftar/brunch organizasyonları da düzenlenir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"DSİ 5. Bölge Kızılay Misafirhanesi", kurum:"Devlet Su İşleri Genel Müdürlüğü", kategori:"Misafirhane", il:"Ankara", ilce:"Çankaya", adres:"Kızılay, Menekşe-2 Cd. No:22, 06420 Çankaya/Ankara", lat:39.9213639, lng:32.8500771, tel:"+90 312 418 85 01", eposta:"", kimler:DSI_KIMLER, ucret:DSI_UCRET, aciklama:"Kızılay merkezde, toplu taşımaya yakın; bina ve oda donanımı eski olabilir, rezervasyon zor bulunabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"DSİ 6. Bölge Merkez Misafirhanesi", kurum:"Devlet Su İşleri Genel Müdürlüğü", kategori:"Misafirhane", il:"Adana", ilce:"Seyhan", adres:"Cemalpaşa, Ordu Cd. No:96, 01120 Seyhan/Adana", lat:37.0044299, lng:35.3313579, tel:"+90 322 459 05 90", eposta:"", kimler:DSI_KIMLER, ucret:DSI_UCRET, aciklama:"Şehir merkezinde, kendi restoranı vardır; kamu personeli için ekonomik fiyatlı bir seçenektir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"DSİ Misafirhanesi (Yenişehir)", kurum:"Devlet Su İşleri Genel Müdürlüğü", kategori:"Misafirhane", il:"Mersin", ilce:"Yenişehir", adres:"Eğriçam, Gazi Mustafa Kemal Blv. 572 Sk., 33160 Yenişehir/Mersin", lat:36.7707042, lng:34.5603631, tel:"+90 324 341 15 00", eposta:"", kimler:DSI_KIMLER, ucret:DSI_UCRET, aciklama:"Merkezi konumda, oda kapasitesi sınırlı olduğundan genelde doluluk yüksektir; önceden rezervasyon önerilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"TCDD Fenerbahçe Eğitim ve Dinlenme Tesisleri", kurum:"TCDD (Türkiye Cumhuriyeti Devlet Demiryolları)", kategori:"Misafirhane", il:"İstanbul", ilce:"Kadıköy", adres:"Fenerbahçe, Atlıhan Sk. 28-30, 34726 Kadıköy/İstanbul", lat:40.9690029, lng:29.0379716, tel:"+90 216 336 07 67", eposta:"", kimler:TCDD_KIMLER, ucret:TCDD_UCRET, aciklama:"Deniz kenarında geniş bir tesis; restoran/kafeterya günübirlik ziyaretçilere de açık. Öncelik eğitim programlarına verildiğinden müsaitlik değişken olabilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"TCDD Misafirhanesi (Adana)", kurum:"TCDD (Türkiye Cumhuriyeti Devlet Demiryolları)", kategori:"Misafirhane", il:"Adana", ilce:"Seyhan", adres:"Kurtuluş, Atatürk Cd. No:136, 01130 Seyhan/Adana", lat:37.0025526, lng:35.3140864, tel:"+90 322 457 46 34", eposta:"", kimler:TCDD_KIMLER, ucret:TCDD_UCRET, aciklama:"Yenilenmiş bina, şehir merkezinde; kahvaltı ücrete dahil değildir, ayrıca ödenir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"TCDD Misafirhanesi (Konya)", kurum:"TCDD (Türkiye Cumhuriyeti Devlet Demiryolları)", kategori:"Misafirhane", il:"Konya", ilce:"Meram", adres:"Konevi, 42040 Meram/Konya", lat:37.8659888, lng:32.476769, tel:"+90 332 320 11 38", eposta:"", kimler:TCDD_KIMLER, ucret:TCDD_UCRET, aciklama:"Tarihi/otantik bir bina, gar yakınında; yemek hizmeti yok, ana cadde üzerinde olduğundan oda sesi yüksek olabilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"TCDD 7. Bölge Müdürlüğü Misafirhanesi", kurum:"TCDD (Türkiye Cumhuriyeti Devlet Demiryolları)", kategori:"Misafirhane", il:"Afyonkarahisar", ilce:"Merkez", adres:"Ali Çetinkaya, 03200 Afyonkarahisar Merkez/Afyonkarahisar", lat:38.7626979, lng:30.5512941, tel:"+90 272 213 76 21", eposta:"", kimler:TCDD_KIMLER, ucret:TCDD_UCRET, aciklama:"Şehir merkezinde, asansörsüz eski bina; yemek hizmeti yok, oda standardı kata göre değişebilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"TCDD 4. Bölge Misafirhanesi", kurum:"TCDD (Türkiye Cumhuriyeti Devlet Demiryolları)", kategori:"Misafirhane", il:"Sivas", ilce:"Merkez", adres:"Kadı Burhanettin, Muhsin Yazıcıoğlu Blv. No:3, 58080 Sivas Merkez/Sivas", lat:39.73959, lng:37.0038821, tel:"+90 346 346 48 33", eposta:"", kimler:TCDD_KIMLER, ucret:TCDD_UCRET, aciklama:"Gara ve şehir merkezine yürüme mesafesinde; Doğu Ekspresi ile gelenler için pratik bir konum.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"TCDD Misafirhanesi (Alsancak)", kurum:"TCDD (Türkiye Cumhuriyeti Devlet Demiryolları)", kategori:"Misafirhane", il:"İzmir", ilce:"Konak", adres:"Alsancak, Atatürk Cd. No:412/A, 35220 Konak/İzmir", lat:38.4397996, lng:27.1470434, tel:"", eposta:"", kimler:TCDD_KIMLER, ucret:TCDD_UCRET, aciklama:"Alsancak'ta toplu taşımaya çok yakın; yoğun talep görüyor, kapasitesi sınırlı.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"TCDD Urla Eğitim ve Dinlenme Tesisleri", kurum:"TCDD (Türkiye Cumhuriyeti Devlet Demiryolları)", kategori:"Dinlenme Tesisi / Kamp", il:"İzmir", ilce:"Urla", adres:"İskele, Yalı Cd. No:1, 35430 Urla/İzmir", lat:38.3773701, lng:26.7602791, tel:"+90 232 752 10 67", eposta:"", kimler:TCDD_KIMLER, ucret:TCDD_UCRET, aciklama:"Kendi plajı, restoranı ve çay bahçesi olan kamp tesisi; alkollü içecek satışı yapılmaz.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"TCDD Misafirhanesi (Kayseri)", kurum:"TCDD (Türkiye Cumhuriyeti Devlet Demiryolları)", kategori:"Misafirhane", il:"Kayseri", ilce:"Kocasinan", adres:"Barbaros, Depo Cd., 38100 Kocasinan/Kayseri", lat:38.7304387, lng:35.4786856, tel:"", eposta:"", kimler:TCDD_KIMLER, ucret:TCDD_UCRET, aciklama:"Merkezi konumda; gar yakınlığı nedeniyle tren sesi gece duyulabiliyor, klima bulunmuyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Karayolları Lojman Misafirhanesi", kurum:"Karayolları Genel Müdürlüğü", kategori:"Misafirhane", il:"Ankara", ilce:"Yenimahalle", adres:"25 Mart, Fatih Sultan Mehmet Blv. No:122/B, 06200 Yenimahalle/Ankara", lat:39.9530224, lng:32.8007112, tel:"+90 312 449 85 03", eposta:"", kimler:KARAYOLLARI_KIMLER, ucret:KARAYOLLARI_UCRET, aciklama:"Kendi kafeterya/restoranı uygun fiyatlı; bazı odalarda klima bulunmuyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Karayolları 3. Bölge Müdürlüğü Misafirhanesi", kurum:"Karayolları Genel Müdürlüğü", kategori:"Misafirhane", il:"Konya", ilce:"Selçuklu", adres:"Horozluhan, Ankara Cd. No:151, 42060 Selçuklu/Konya", lat:37.9082649, lng:32.5138040, tel:"+90 332 224 27 00", eposta:"", kimler:KARAYOLLARI_KIMLER, ucret:KARAYOLLARI_UCRET, aciklama:"Ankara yolu üzerinde, geniş bahçeli; restoranı kamu personeline ve ziyaretçilere de hizmet veriyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Karayolları 18. Şube Misafirhanesi", kurum:"Karayolları Genel Müdürlüğü", kategori:"Misafirhane", il:"Tekirdağ", ilce:"Merkez", adres:"Cumhuriyet, 59030 Tekirdağ Merkez/Tekirdağ", lat:40.97922, lng:27.5280682, tel:"", eposta:"", kimler:KARAYOLLARI_KIMLER, ucret:KARAYOLLARI_UCRET, aciklama:"Transit geçiş için pratik bir konaklama noktası, deniz manzaralı odaları var; kamu personeline indirimli tarife uygulanır.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Ziraat Bankası Eğitim Misafirhanesi", kurum:"Ziraat Bankası", kategori:"Misafirhane", il:"Ankara", ilce:"Yenimahalle", adres:"Varlık, İstanbul Yolu, 06170 Yenimahalle/Ankara", lat:39.9557885, lng:32.8256665, tel:"", eposta:"", kimler:BANKA_KIMLER, ucret:BANKA_UCRET, aciklama:"Bankanın eğitim merkezi kampüsü içinde; öncelik kurum personeline ve eğitim katılımcılarına verilir, dışarıdan misafir genelde dolu bulur.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Ziraat Bankası Misafirhanesi (Konak)", kurum:"Ziraat Bankası", kategori:"Misafirhane", il:"İzmir", ilce:"Konak", adres:"Kültür, Talatpaşa Blv. No:19, 35220 Konak/İzmir", lat:38.4341208, lng:27.1410111, tel:"+90 232 464 78 15", eposta:"", kimler:BANKA_KIMLER, ucret:BANKA_UCRET, aciklama:"Merkezi konumda, kurum dışı misafirlere fiyat bilgisi check-in öncesi tam netleşmeyebiliyor; rezervasyonda fiyatı yazılı teyit ettirin.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Ziraat Bankası Balmumcu Misafirhanesi", kurum:"Ziraat Bankası", kategori:"Misafirhane", il:"İstanbul", ilce:"Beşiktaş", adres:"Dikilitaş, Yenidoğan Sk. No:34, 34349 Beşiktaş/İstanbul", lat:41.0557815, lng:29.0087057, tel:"+90 212 258 04 42", eposta:"", kimler:BANKA_KIMLER, ucret:BANKA_UCRET, aciklama:"Şehrin merkezi noktalarına yakın; yeni ve temiz bir bina olarak değerlendiriliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Halkbank Misafirhanesi (Kocatepe)", kurum:"Halkbank", kategori:"Misafirhane", il:"Ankara", ilce:"Çankaya", adres:"Kültür, Dr. Mediha Eldem Sk. No:50, 06420 Çankaya/Ankara", lat:39.9199489, lng:32.859973, tel:"+90 312 433 10 15", eposta:"", kimler:BANKA_KIMLER, ucret:BANKA_UCRET, aciklama:"⚠️ Kullanıcı yorumlarında 'sadece kendi personeline hizmet veriyor, pandemi sonrası bazı dönemler hizmeti durdurdu' notu var; gitmeden mutlaka arayın.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"VakıfBank Kavacık Misafirhanesi", kurum:"VakıfBank", kategori:"Misafirhane", il:"İstanbul", ilce:"Kartal", adres:"Yakacık Çarşı, Sağlık Sk. No:1, 34876 Kartal/İstanbul", lat:40.9173698, lng:29.2233435, tel:"", eposta:"", kimler:BANKA_KIMLER, ucret:BANKA_UCRET, aciklama:"Aile ortamına yakın, sakin bir tesis olarak tarif ediliyor; konaklama süresi sınırlı olabilir, rezervasyonda sorun.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Ankara Diyanet Evi", kurum:"Diyanet İşleri Başkanlığı", kategori:"Misafirhane", il:"Ankara", ilce:"Çankaya", adres:"Kavaklıdere, Bankacı Sk. No:11, 06680 Çankaya/Ankara", lat:39.9143411, lng:32.8593325, tel:"+90 312 419 51 62", eposta:"", kimler:DIYANET_KIMLER, ucret:DIYANET_UCRET, aciklama:"56 oda/116 yatak kapasiteli, Kocatepe Camii'ne yürüme mesafesinde; otel konforunda, sivil misafirler de kabul ediliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Diyanet Evi Üsküdar", kurum:"Diyanet İşleri Başkanlığı", kategori:"Misafirhane", il:"İstanbul", ilce:"Üsküdar", adres:"İcadiye, Ayarcıbaşı Sk. No:25, 34674 Üsküdar/İstanbul", lat:41.02573, lng:29.0374842, tel:"+90 216 492 80 82", eposta:"", kimler:DIYANET_KIMLER, ucret:DIYANET_UCRET, aciklama:"2020'de açılan yeni tesis; temizlik ve kahvaltı standardı kamu misafirhaneleri arasında öne çıkıyor diye değerlendiriliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Sultanahmet Diyanet Evi", kurum:"Diyanet İşleri Başkanlığı", kategori:"Misafirhane", il:"İstanbul", ilce:"Fatih", adres:"Binbirdirek, Klodfarer Cd. No:12, 34122 Fatih/İstanbul", lat:41.007844, lng:28.973331, tel:"", eposta:"", kimler:DIYANET_KIMLER, ucret:DIYANET_UCRET, aciklama:"Sultanahmet Camii ve Ayasofya'ya yürüme mesafesinde; talep çok yüksek olduğundan rezervasyon erkenden yapılmalı.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Orman Genel Müdürlüğü Misafirhanesi", kurum:"Orman Genel Müdürlüğü", kategori:"Misafirhane", il:"Ankara", ilce:"Çankaya", adres:"Söğütözü, Beştepe Cd. 8/1, 06560 Yenimahalle/Ankara", lat:39.9172842, lng:32.8033398, tel:"+90 312 296 34 01", eposta:"", kimler:OGM_KIMLER, ucret:"Kullanıcı paylaşımlarına göre: tek kişilik oda+kahvaltı ~1.010 TL; çift kişilik oda ~1.000 TL/gece, kahvaltı ~200 TL/kişi ek ücretli. Bu rakamlar 2025-2026 dönemine ait kullanıcı beyanıdır, güncel fiyatı tesisten teyit edin.", aciklama:"Otel konforunda, restoran ve toplantı salonu hizmeti de var; rezervasyon yoğun dönemlerde zor bulunabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Trabzon Orman İşletme Müdürlüğü Misafirhanesi", kurum:"Orman Genel Müdürlüğü", kategori:"Misafirhane", il:"Trabzon", ilce:"Ortahisar", adres:"Sahil Caddesi, Toklu, 61040 Ortahisar/Trabzon", lat:40.9988275, lng:39.6850923, tel:"+90 462 230 11 19", eposta:"", kimler:OGM_KIMLER, ucret:OGM_UCRET, aciklama:"Sahil yolu üzerinde, bahçesi botanik bahçesi gibi tarif ediliyor; kamu personeli ve sivil için ayrı tarife var.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Sinop Rahmi Demir Sosyal Tesisleri", kurum:"Orman Genel Müdürlüğü", kategori:"Dinlenme Tesisi / Kamp", il:"Sinop", ilce:"Merkez", adres:"Gelincik, Plaj Yolu, 57000 Sinop Merkez/Sinop", lat:42.020004, lng:35.135723, tel:"", eposta:"", kimler:OGM_KIMLER, ucret:"Tesisin kendi duyurusuna göre: kamu personeli günlük kişi başı 1.200 TL, sivil/kamu dışı 1.800 TL (+%1 konaklama vergisi hariç). Tek gece ve tek kişiye yer verilmiyor.", aciklama:"Plaja sıfır bungalov tipi konaklama; mutfak donanımı (tencere/bardak) kendi getirilmeli, banyo/tuvalet ortak alanda olabilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Karabük Orman İşletme Müdürlüğü Misafirhanesi", kurum:"Orman Genel Müdürlüğü", kategori:"Misafirhane", il:"Karabük", ilce:"Merkez", adres:"Yeşil, Esentepe Cd. No:89, 78200 Karabük Merkez/Karabük", lat:41.202024, lng:32.6263249, tel:"+90 370 424 10 82", eposta:"", kimler:OGM_KIMLER, ucret:OGM_UCRET, aciklama:"Temiz ve geniş bir misafirhane olarak değerlendiriliyor; ulaşımı kolay, merkeze yakın.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Konya Orman Bölge Müdürlüğü Misafirhanesi", kurum:"Orman Genel Müdürlüğü", kategori:"Misafirhane", il:"Konya", ilce:"Meram", adres:"Pirebi, Gazhane Sk. No:31, 42040 Meram/Konya", lat:37.864461, lng:32.4910621, tel:"+90 332 353 69 02", eposta:"", kimler:OGM_KIMLER, ucret:OGM_UCRET, aciklama:"Oda sayısı az olduğundan doluluk yüksek olabilir; personel ilgisinin iyi olduğu belirtiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Ankara Hâkimevi", kurum:"Adalet Bakanlığı", kategori:"Misafirhane", il:"Ankara", ilce:"Çankaya", adres:"Harbiye, Tavuskuşu Sk. No:18, 06460 Çankaya/Ankara", lat:39.8957591, lng:32.8388963, tel:"+90 312 481 80 40", eposta:"", kimler:ADALET_KIMLER, ucret:ADALET_UCRET, aciklama:"107 oda/210 yatak kapasiteli büyük bir tesis; restoran, kafeterya ve toplantı salonları mevcuttur, Kızılay'a araçla 5 dakika.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Konya Hâkimevi", kurum:"Adalet Bakanlığı", kategori:"Misafirhane", il:"Konya", ilce:"Karatay", adres:"Sarıyakup, Toprakhk Cd. No:83, 42020 Karatay/Konya", lat:37.8673485, lng:32.5097687, tel:"+90 332 352 21 50", eposta:"", kimler:ADALET_KIMLER, ucret:ADALET_UCRET, aciklama:"Butik yapıda 9 odalı bir tesis; öncelik yargı camiası mensuplarına verilir, bazı odalar üst düzey misafirlere ayrılabilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Hakimevi (Tarabya)", kurum:"Adalet Teşkilatını Güçlendirme Vakfı", kategori:"Misafirhane", il:"İstanbul", ilce:"Sarıyer", adres:"Ferahevler, Cenk Sk. No:1, 34457 Sarıyer/İstanbul", lat:41.129772, lng:29.04905, tel:"+90 212 223 49 59", eposta:"", kimler:"Hakimler, savcılar ve yargı camiası mensupları ile aileleri öncelikli ve genelde tek başvuru grubu; üyelik/mensubiyet şartı arandığı belirtiliyor.", ucret:ADALET_UCRET, aciklama:"61 oda/138 yatak, havuzlu geniş bir tesis; düğün/davet organizasyonları da düzenleniyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Hasan Erbil Eğitim Merkezi Misafirhanesi", kurum:"Adalet Bakanlığı", kategori:"Misafirhane", il:"Denizli", ilce:"Pamukkale", adres:"Aktepe, 2390. Sk. No:4, 20200 Pamukkale/Denizli", lat:37.7953622, lng:29.1196971, tel:"+90 258 268 69 12", eposta:"", kimler:ADALET_KIMLER, ucret:ADALET_UCRET, aciklama:"Adalet Bakanlığı eğitim merkezi içinde, 7-8 oda halka da açık; şehir merkezine ~15 dk, Pamukkale'ye ~35 dk.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"DSİ Denizli Misafirhanesi", kurum:"Devlet Su İşleri Genel Müdürlüğü", kategori:"Misafirhane", il:"Denizli", ilce:"Merkezefendi", adres:"Şemikler, Gümüşler Blv. No:40, 20030 Merkezefendi/Denizli", lat:37.8047897, lng:29.0612799, tel:"+90 258 502 02 17", eposta:"", kimler:DSI_KIMLER, ucret:DSI_UCRET, aciklama:"Geniş otoparklı, yenilenmiş bir tesis; bazı dönemlerde kahvaltı ek ücretli olabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"TPAO İstanbul Misafirhanesi", kurum:"Türkiye Petrolleri A.O. (TPAO)", kategori:"Misafirhane", il:"İstanbul", ilce:"Şişli", adres:"Esentepe, Şht. Mehmet Mikdat Ulu Ünlü Sk. No:21, 34394 Şişli/İstanbul", lat:41.0715805, lng:29.0105935, tel:"+90 212 498 14 00", eposta:"", kimler:KIT_KIMLER, ucret:KIT_UCRET, aciklama:"Temiz ve yeni bir kurum misafirhanesi; terasta akşamları ikram hizmeti sunuluyor, personel ilgisi övgüyle anılıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"TEDAŞ Konukevi (Ataşehir)", kurum:"TEDAŞ", kategori:"Misafirhane", il:"İstanbul", ilce:"Ataşehir", adres:"İçerenköy, Bostancı Sanayii Mevkii, 34752 Ataşehir/İstanbul", lat:40.9657296, lng:29.1054897, tel:"", eposta:"", kimler:KIT_KIMLER, ucret:KIT_UCRET, aciklama:"⚠️ Kullanıcı yorumlarında rezervasyon/iletişim sorunları sık bildiriliyor; gitmeden mutlaka arayarak ve yazılı teyit alarak ilerleyin.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"PTT Samanpazarı Misafirhanesi", kurum:"PTT (Posta ve Telgraf Teşkilatı)", kategori:"Misafirhane", il:"Ankara", ilce:"Altındağ", adres:"Hacı Bayram, Anafartalar Cd. No:100, 06050 Altındağ/Ankara", lat:39.9347991, lng:32.8617154, tel:"+90 312 560 62 34", eposta:"", kimler:KIT_KIMLER, ucret:KIT_UCRET, aciklama:"Hastane bölgesine yakın, aile konaklaması için tercih ediliyor; rezervasyon kuralları (kaç gün önceden açıldığı) sıkça değişebiliyor, telefonla teyit edin.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Balıkesir Öğretmenevi ve Akşam Sanat Okulu", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Balıkesir", ilce:"Altıeylül", adres:"Çayır Sk. No:34, 10050 Altıeylül/Balıkesir", lat:39.6153567, lng:27.8981088, tel:"+90 501 735 01 73", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"64 oda/175 yatak kapasiteli büyük bir tesis; restoran, kuaför ve çok amaçlı salon hizmetleri mevcut.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Manisa Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Manisa", ilce:"Şehzadeler", adres:"Peker, İbrahim Gökçen Blv. No:92/2, 45020 Şehzadeler/Manisa", lat:38.620723, lng:27.428308, tel:"+90 236 231 18 43", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Merkezi konumda; bazı yorumlarda sıcak su ve temizlik konusunda dönemsel sorunlar bildirilmiş.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Malatya Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Malatya", ilce:"Battalgazi", adres:"Niyazi, Karakaş Sk. No:2, 44100 Battalgazi/Malatya", lat:38.3484507, lng:38.3071919, tel:"+90 422 326 15 43", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Şehir merkezinde stratejik konum, kahvaltı dahil; banyo giderinde dönemsel tıkanıklık şikayeti var.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Elazığ Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Elazığ", ilce:"Merkez", adres:"Nail Bey, Hürriyet Cd. No:3, 23000 Elazığ Merkez/Elazığ", lat:38.6747471, lng:39.2221275, tel:"+90 424 233 24 11", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Şehrin ana ulaşım noktalarına yakın; konaklamadan önce telefonla oda müsaitliğini teyit edin.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kahramanmaraş Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Kahramanmaraş", ilce:"Dulkadiroğlu", adres:"İsmet Paşa, Zübeyde Hanım Blv. No:22, 46100 Dulkadiroğlu/Kahramanmaraş", lat:37.5759434, lng:36.9292933, tel:"+90 344 225 55 80", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Üst katlardan şehir manzarası var; kahvaltı ve yemek ek ücretli sunuluyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Antakya Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Hatay", ilce:"Antakya", adres:"Cumhuriyet, Cumhuriyet Cd., 31040 Antakya/Hatay", lat:36.2044584, lng:36.1556321, tel:"+90 326 216 11 58", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Öğretmenlere özel indirimli tarife uygulanıyor; bazı öğretmenevlerinde olduğu gibi giriş koşulları (yakınlık belgesi vb.) değişebiliyor, rezervasyonda netleştirin.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Çorum Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Çorum", ilce:"Merkez", adres:"Bahçelievler, Çamlık Cd. No:12, 19200 Çorum Merkez/Çorum", lat:40.554237, lng:34.967687, tel:"+90 364 221 75 47", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Balkonlu odalar mevcut; bazı banyolarda duşakabin bulunmadığı bildiriliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Ordu Merkez Öğretmenevi ve Akşam Sanat Okulu", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Ordu", ilce:"Merkez", adres:"Düz, Süleyman Felek Cd. No:33, 52100 Ordu Merkez/Ordu", lat:40.9866904, lng:37.8772921, tel:"+90 452 225 43 58", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Konum olarak merkezi; oda büyüklüğü ve kahvaltı standart bir öğretmenevi seviyesinde.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Aydın Efeler Öğretmenevi ve ASO", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Aydın", ilce:"Efeler", adres:"Meşrutiyet, Atatürk Blv. No:21, 09100 Efeler/Aydın", lat:37.851618, lng:27.835358, tel:"+90 256 225 26 81", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Yenilenmiş, temiz bir tesis olarak değerlendiriliyor; şehir merkezine 10-15 dakika yürüme mesafesinde, otoparkı var.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Muş Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Muş", ilce:"Merkez", adres:"Hürriyet, Sırrı Aşar Cd., 49100 Muş Merkez/Muş", lat:38.7377885, lng:41.4932381, tel:"+90 538 810 33 27", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Yeni bina, geniş odalar; otopark yanındaki düğün salonu nedeniyle bazı günler kalabalık olabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Batman Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Batman", ilce:"Merkez", adres:"Bahçelievler, Turgut Özal Blv. No:34, 72070 Batman Merkez/Batman", lat:37.8938663, lng:41.1303695, tel:"+90 488 215 46 03", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Şehir merkezinde, çay/kahve içmek için de tercih edilen bir sosyal alanı var.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Şırnak Öğretmenevi ve ASO", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Şırnak", ilce:"Merkez", adres:"Gündoğdu, 73000 Şırnak Merkez/Şırnak", lat:37.5093609, lng:42.4587087, tel:"+90 486 216 50 15", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Yeni binası, havuz/hamam/sauna gibi ek hizmetleriyle dikkat çekiyor; şehir merkezine biraz uzak, kendi aracınızla gitmeniz önerilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Ağrı Öğretmenevi (Merkez Burçin Uysal)", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Ağrı", ilce:"Merkez", adres:"Fırat, 934. Sk. No:2, 04200 Ağrı Merkez/Ağrı", lat:39.7180107, lng:43.0311842, tel:"+90 472 215 30 06", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Şehir merkezine ~2 km; temiz ve modern bina olarak değerlendiriliyor, saatlik çay/tost ikramı var.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kars Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Kars", ilce:"Merkez", adres:"Cumhuriyet, 36100 Kars Merkez/Kars", lat:40.6016667, lng:43.0955556, tel:"+90 474 212 73 12", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Şehir merkezinde, temiz ve ekonomik; odalarda buzdolabı bulunmadığı belirtiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Ardahan Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Ardahan", ilce:"Merkez", adres:"Kaptanpaşa, Ordu Cd. No:8, 75000 Ardahan Merkez/Ardahan", lat:41.113863, lng:42.7031219, tel:"+90 478 211 27 50", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"4. katta, asansör bulunmuyor; bagajla çıkış için hazırlıklı olun.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bitlis Öğretmenevi ve ASO", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Bitlis", ilce:"Merkez", adres:"Beş Minare Mah. No:8, 13000 Bitlis Merkez/Bitlis", lat:38.4491001, lng:42.1414981, tel:"+90 552 456 41 13", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Şehir dışında, tepede yeni bir bina; manzarası güzel ama asansörü çalışmadığı dönemler bildirilmiş.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Rize Öğretmenevi ve Akşam Sanat Okulu", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Rize", ilce:"Merkez", adres:"Engindere Mah., Menderes Blv. No:175/1, 53020 Rize Merkez/Rize", lat:41.04469, lng:40.5826867, tel:"+90 464 226 09 16", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Düğün salonu da bünyesinde bulunuyor; etkinlik günlerinde gürültü olabileceğini unutmayın.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Anıttepe Jandarma Sosyal Tesisleri", kurum:"Jandarma Genel Komutanlığı", kategori:"Misafirhane", il:"Ankara", ilce:"Çankaya", adres:"Maltepe, Gençlik Cd. No:127, 06570 Çankaya/Ankara", lat:39.9215769, lng:32.8433084, tel:"+90 312 601 29 99", eposta:"", kimler:JANDARMA_KIMLER, ucret:JANDARMA_UCRET, aciklama:"Anıtkabir'e yakın, restoran/pastane/kuaför gibi sosyal hizmetleri kapsamlı; düğün/nişan organizasyonları için de tercih ediliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Balmumcu Jandarma Sosyal Tesisleri", kurum:"Jandarma Genel Komutanlığı", kategori:"Misafirhane", il:"İstanbul", ilce:"Beşiktaş", adres:"Balmumcu, Şakir Kesebir Cd. No:1, 34349 Beşiktaş/İstanbul", lat:41.0622265, lng:29.0134492, tel:"+90 212 213 44 00", eposta:"", kimler:JANDARMA_KIMLER, ucret:JANDARMA_UCRET, aciklama:"⚠️ Yorumlarda 'sadece askeri personel' notu sık geçiyor; sivil misafir kabulü hak sahibi refakatine bağlı, gitmeden mutlaka arayın.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Antalya İl Jandarma Sosyal Tesisi", kurum:"Jandarma Genel Komutanlığı", kategori:"Misafirhane", il:"Antalya", ilce:"Muratpaşa", adres:"Bayındır, Dumlupınar Blv. Yanyolu No:167, 07030 Muratpaşa/Antalya", lat:36.8984289, lng:30.6670861, tel:"+90 242 238 22 07", eposta:"", kimler:JANDARMA_KIMLER, ucret:JANDARMA_UCRET, aciklama:"İl Jandarma Komutanlığı kışlası içinde yer alıyor; giriş için güvenlik kontrolünden geçilir, randevu/teyit şart.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Adana Jandarma Sosyal Tesisi", kurum:"Jandarma Genel Komutanlığı", kategori:"Misafirhane", il:"Adana", ilce:"Seyhan", adres:"Türkocağı, Ali Münif Yeğenağa Cd. No:160/1, 01020 Seyhan/Adana", lat:36.983159, lng:35.331922, tel:"", eposta:"", kimler:JANDARMA_KIMLER, ucret:JANDARMA_UCRET, aciklama:"Seyhan Nehri ve şehir merkezine yürüme mesafesinde; sakin ve temiz olarak tarif ediliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Tokat İl Sağlık Müdürlüğü Misafirhanesi (75. Yıl Eğitim ve Sosyal Tesisi)", kurum:"Sağlık Bakanlığı", kategori:"Misafirhane", il:"Tokat", ilce:"Merkez", adres:"Yeni, Mustafa Satan Cd., 60100 Tokat Merkez/Tokat", lat:40.3238582, lng:36.553428, tel:"+90 356 214 93 83", eposta:"", kimler:SAGLIK_KIMLER, ucret:SAGLIK_UCRET, aciklama:"Şehir merkezine yürüme mesafesinde; sağlık personeli için ayrıca indirim uygulanıyor, gece yarısından sonra giriş kısıtlı olabilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"DHMİ I. Bölge Müdürlüğü Misafirhanesi", kurum:"DHMİ (Devlet Hava Meydanları İşletmesi)", kategori:"Misafirhane", il:"İstanbul", ilce:"Bakırköy", adres:"Yeşilköy, 34149 Bakırköy/İstanbul", lat:40.9778752, lng:28.8225855, tel:"+90 444 3464", eposta:"", kimler:DHMI_KIMLER, ucret:DHMI_UCRET, aciklama:"Atatürk Havalimanı karşısında, metro istasyonuna 3 dakika yürüyüşte; bazı odalarda pencere/havalandırma sorunu bildiriliyor, oda görmeden ödeme yapmayın.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Meteoroloji 1. Bölge Müdürlüğü Misafirhanesi", kurum:"Meteoroloji Genel Müdürlüğü", kategori:"Misafirhane", il:"İstanbul", ilce:"Kartal", adres:"Orhantepe Mh, Cevizli, 30 Ağustos Cd. No:2, 34865 Kartal/İstanbul", lat:40.911729, lng:29.1567989, tel:"+90 216 457 34 00", eposta:"", kimler:METEOROLOJI_KIMLER, ucret:"Bir kullanıcı sadece konaklama için (kahvaltısız) 960 TL ödediğini paylaşmış; bu tek bir kullanıcı beyanı olduğundan net fiyatı tesisten teyit edin.", aciklama:"Az bilinen ama gerçek bir kamu misafirhanesi; bazı yorumlarda iletişim ve bakım sorunları bildirilmiş, rezervasyonu telefonla ısrarla teyit edin.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Türk Telekom Konukevi (Ataköy)", kurum:"Türk Telekom", kategori:"Misafirhane", il:"İstanbul", ilce:"Bakırköy", adres:"Ataköy 3-4-11. Kısım, 34158 Bakırköy/İstanbul", lat:40.9821346, lng:28.8617486, tel:"+90 212 395 62 62", eposta:"", kimler:KIT_KIMLER, ucret:KIT_UCRET, aciklama:"Çoğu kişinin bilmediği bir kurum konukevi; sahil yoluna ve D-100'e yakın, personel önceliği yüksek.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Toprak Mahsulleri Ofisi (TMO) İstanbul Misafirhanesi", kurum:"Toprak Mahsulleri Ofisi (TMO)", kategori:"Misafirhane", il:"İstanbul", ilce:"Üsküdar", adres:"Selimiye, Burhan Felek Cd. No:16, 34668 Üsküdar/İstanbul", lat:41.0037834, lng:29.0163535, tel:"+90 216 414 53 41", eposta:"", kimler:KIT_KIMLER, ucret:KIT_UCRET, aciklama:"Temiz ve düzenli olarak değerlendiriliyor; kahvaltı/yemek hizmeti yok, yakında kantin de bulunmuyor — kendi yiyeceğinizi getirmeniz önerilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"MKE (Makina ve Kimya Endüstrisi) Misafirhanesi", kurum:"MKE A.Ş. (Makina ve Kimya Endüstrisi)", kategori:"Misafirhane", il:"İstanbul", ilce:"Beyoğlu", adres:"Ömer Avni, 34427 Beyoğlu/İstanbul", lat:41.0370769, lng:28.9925434, tel:"+90 212 334 30 60", eposta:"", kimler:KIT_KIMLER, ucret:KIT_UCRET, aciklama:"Taksim'e yürüme mesafesinde, Boğaz manzaralı terası var; fiyatların son dönemde belirgin arttığı yorumlarda belirtiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"TEİAŞ 4. Bölge Müdürlüğü Misafirhanesi", kurum:"TEİAŞ (Türkiye Elektrik İletim A.Ş.)", kategori:"Misafirhane", il:"İstanbul", ilce:"Ümraniye", adres:"Namık Kemal, Şeker Maslak Sk. No:9, 34762 Ümraniye/İstanbul", lat:41.0218317, lng:29.0844362, tel:"+90 216 521 58 00", eposta:"", kimler:KIT_KIMLER, ucret:KIT_UCRET, aciklama:"⚠️ Rezervasyonların müdür onayına bağlı olduğu ve bazı taleplerin gerekçesiz reddedildiği yorumlarda sık bildiriliyor; ısrarcı olmanız gerekebilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"PTT Beyoğlu (Taksim) Misafirhanesi", kurum:"PTT (Posta ve Telgraf Teşkilatı)", kategori:"Misafirhane", il:"İstanbul", ilce:"Beyoğlu", adres:"Tomtom, Yeni Çarşı Cd. No:4, 34433 Beyoğlu/İstanbul", lat:41.0331207, lng:28.9773135, tel:"+90 212 252 01 40", eposta:"", kimler:KIT_KIMLER, ucret:KIT_UCRET, aciklama:"İstiklal Caddesi'ne ve Galata Kulesi'ne yürüme mesafesinde; az bilinen ama merkezi konumu nedeniyle değerli bir seçenek.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Çaykur İstanbul Misafirhanesi", kurum:"ÇAYKUR (Çay İşletmeleri Genel Müdürlüğü)", kategori:"Misafirhane", il:"İstanbul", ilce:"Sarıyer", adres:"Kazım Karabekir Paşa Mh., Bahçeköy Cd. No:106, 34453 Sarıyer/İstanbul", lat:41.1586601, lng:29.0217961, tel:"+90 212 242 18 16", eposta:"", kimler:KIT_KIMLER, ucret:KIT_UCRET, aciklama:"Sarıyer'in yeşil/sakin bir bölgesinde, Çaykur'un İstanbul satış-pazarlama tesisleri içinde; az bilinen bir kurum konaklaması.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Eti Maden İstanbul Misafirhanesi", kurum:"Eti Maden İşletmeleri Genel Müdürlüğü", kategori:"Misafirhane", il:"İstanbul", ilce:"Fatih", adres:"Kemal Paşa, Haşim İşcan Gç. No:40, 34134 Fatih/İstanbul", lat:41.012311, lng:28.953607, tel:"+90 212 520 66 31", eposta:"", kimler:KIT_KIMLER, ucret:KIT_UCRET, aciklama:"Temizlik ve ikram standardı övgüyle anılıyor (banyo seti, diş kiti gibi detaylar); doluluk çok yüksek olduğundan erken rezervasyon şart.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Sayıştay Başkanlığı Eğitim ve Dinlenme Tesisleri", kurum:"Sayıştay Başkanlığı", kategori:"Dinlenme Tesisi / Kamp", il:"Antalya", ilce:"Manavgat", adres:"Çenger, 07600 Manavgat/Antalya", lat:36.6780694, lng:31.6263042, tel:"+90 242 766 42 11", eposta:"", kimler:SAYISTAY_KIMLER, ucret:SAYISTAY_UCRET, aciklama:"En az bilinen ama gerçekten lüks kamu tesislerinden biri — 3 havuzu (aquapark dahil), plajı ve geniş bahçesi var; yemek kalitesi 5 yıldızlı otellerle kıyaslanacak kadar övgü alıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"TRT Lara Kampı", kurum:"TRT (Türkiye Radyo Televizyon Kurumu)", kategori:"Dinlenme Tesisi / Kamp", il:"Antalya", ilce:"Aksu", adres:"Güzeloba, Kundu, Oteller Bölgesi Tesisler Cd., 07110 Aksu/Antalya", lat:36.8522223, lng:30.853139, tel:"+90 242 352 06 10", eposta:"", kimler:TRT_KIMLER, ucret:TRT_UCRET, aciklama:"Lara/Kundu otel bölgesinde, beş yıldızlı otellerin arasında bir devlet plaj kampı; şezlong, şemsiye, soyunma kabini dahil, alkol satılmıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"İller Bankası Sosyal Tesisleri", kurum:"İller Bankası A.Ş.", kategori:"Misafirhane", il:"Ankara", ilce:"Yenimahalle", adres:"Çamlıca, Anadolu Blv. No:24, 06200 Yenimahalle/Ankara", lat:39.9543934, lng:32.7712416, tel:"+90 312 508 84 94", eposta:"", kimler:ILBANK_KIMLER, ucret:ILBANK_UCRET, aciklama:"Geniş bahçeli, restoran/kafe bölümü kamu personeli dışında da popüler; rezervasyon önerilir, akşamları kalabalık olabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"MTA (Maden Tetkik ve Arama) Misafirhanesi", kurum:"Maden Tetkik ve Arama Genel Müdürlüğü", kategori:"Misafirhane", il:"Ankara", ilce:"Çankaya", adres:"Çukurambar, 06510 Çankaya/Ankara", lat:39.9080378, lng:32.7989705, tel:"", eposta:"", kimler:KIT_KIMLER, ucret:KIT_UCRET, aciklama:"Az bilinen ama gerçek bir kurum misafirhanesi; orman/kampüs gibi sakin bir alanda, metro durağına 30 saniye yürüme mesafesinde.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"TAKAV Sosyal Tesisleri (Tapu Kadastro Vakfı)", kurum:"Tapu ve Kadastro Genel Müdürlüğü / TAKAV", kategori:"Misafirhane", il:"İstanbul", ilce:"Fatih", adres:"Alemdar, Salkım Söğüt Sk. No:15, 34110 Fatih/İstanbul", lat:41.0094469, lng:28.9770616, tel:"", eposta:"", kimler:TAKAV_KIMLER, ucret:"Kullanıcı paylaşımına göre kamu personeli gecelik ~1.250 TL (2026 verisi); su gibi bazı ikramlar oda fiyatına dahil değil, ek ücretli.", aciklama:"Sultanahmet bölgesinde, İstanbul'un başlıca turistik noktalarına yürüme mesafesinde; terastan manzara övgüyle anılıyor, su gibi ikramlar ek ücretli olabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"BOTAŞ Misafirhanesi", kurum:"BOTAŞ (Boru Hatları ile Petrol Taşıma A.Ş.)", kategori:"Misafirhane", il:"Ankara", ilce:"Etimesgut", adres:"Yapracık, 06790 Etimesgut/Ankara", lat:39.8469309, lng:32.5933232, tel:"", eposta:"", kimler:KIT_KIMLER, ucret:KIT_UCRET, aciklama:"⚠️ Bazı yorumlarda eski/bakımsız olduğu, bazılarında tadilat geçirdiği belirtiliyor — gitmeden güncel durumu telefonla teyit edin. Hamam/sauna gibi ek (ücretli) hizmetleri var.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Adıyaman Öğretmenevi ve ASO Müdürlüğü", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Adıyaman", ilce:"Merkez", adres:"Eskisaray, 702. Sk. No:2, 02100 Adıyaman Merkez/Adıyaman", lat:37.7623809, lng:38.2732537, tel:"", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Deprem sonrası standartlarına göre yeni inşa edilmiş; 4 yıldızlı otel konforunda olduğu, merkezi konumu ve makul fiyatlarıyla övgüyle anılıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Aksaray Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Aksaray", ilce:"Merkez", adres:"Hasas, Cumhuriyet Blv. No:139, 68200 Aksaray Merkez/Aksaray", lat:38.3799234, lng:34.0257709, tel:"+90 553 901 08 68", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Şehir merkezinde, temiz ve konforlu olarak değerlendiriliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Amasya Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Amasya", ilce:"Merkez", adres:"Dere, Özkan Yalçın Cd. No:11, 05100 Amasya Merkez/Amasya", lat:40.650475, lng:35.832093, tel:"", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Yeşilırmak kenarında, çarşıya ve turistik noktalara yakın; nehir tarafı odalarda akşamları sivrisinek olabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Artvin Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Artvin", ilce:"Merkez", adres:"Çarşı, Öğrt. Süleyman Yurttaş Sk. No:2, 08000 Artvin Merkez/Artvin", lat:41.1795997, lng:41.8170639, tel:"+90 505 918 26 65", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Şehrin yokuşlu yapısı nedeniyle ulaşımı biraz zor olabilir; otoparkı sınırlı.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bartın Öğretmenevi ve ASO", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Bartın", ilce:"Merkez", adres:"Kemer Köprü, Arka Sk. No:4/1, 74100 Bartın Merkez/Bartın", lat:41.6266699, lng:32.332782, tel:"+90 378 227 13 29", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Temiz ve ekonomik; kart sistemli dijital kapı kilidi kullanılıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bayburt Öğretmenevi ve ASO", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Bayburt", ilce:"Merkez", adres:"Gençosman, Oslu Baba Cd. No:17, 69000 Bayburt Merkez/Bayburt", lat:40.2465972, lng:40.2297897, tel:"+90 458 211 71 06", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Üniversiteye ve stadyuma yakın; maç günleri gürültülü olabiliyor, online rezervasyon mevcut.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bilecik Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Bilecik", ilce:"Merkez", adres:"Bahçelievler, Uzun Sk. No:5, 11000 Bilecik Merkez/Bilecik", lat:40.1561219, lng:29.9767447, tel:"+90 228 212 50 51", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Sakin bir bölgede; standart bir öğretmenevi deneyimi sunuyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bingöl Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Bingöl", ilce:"Merkez", adres:"Karşıyaka, 12000 Bingöl", lat:38.8950167, lng:40.5042361, tel:"", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Hastane karşısında; en az 3 gün önceden telefonla rezervasyon önerilir, doluluk yüksek olabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bolu Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Bolu", ilce:"Merkez", adres:"Sağlık, Karadere Cd. No:1, Atatürk Orman Parkı yanı, 14300 Bolu Merkez/Bolu", lat:40.7392217, lng:31.6127504, tel:"+90 374 255 15 14", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Geniş otoparklı, merkezi konumda; sade ama ekonomik bir konaklama sunuyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Burdur Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Burdur", ilce:"Merkez", adres:"Bahçelievler, 15300 Burdur Merkez/Burdur", lat:37.7177194, lng:30.2761322, tel:"+90 248 502 02 15", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"⚠️ Yorumlarda bina yaşının eski olduğu ve bakım/yenileme ihtiyacı bildiriliyor; oda görmeden ödeme yapmayın.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Çanakkale Öğretmenevi ve ASO", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Çanakkale", ilce:"Merkez", adres:"Cevat Paşa, Mehmetçik Blv. No:2, 17100 Çanakkale Merkez/Çanakkale", lat:40.1510601, lng:26.4038328, tel:"", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Deniz kenarında merkezi bir konumda; uzun süreli tadilat dönemleri geçirdiği bildiriliyor, gitmeden arayıp açık olduğunu teyit edin.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Çankırı Öğretmenevi ve Akşam Sanat Okulu", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Çankırı", ilce:"Merkez", adres:"Cumhuriyet, Adnan Menderes Cd. 4/A, 18100 Çankırı Merkez/Çankırı", lat:40.598585, lng:33.6147502, tel:"+90 376 213 30 27", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"⚠️ Konaklama ve yemek bölümleri farklı binalarda olabiliyor, harita konumu kafa karıştırabilir; gitmeden tarif isteyin.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Edirne Öğretmenevi ve ASO Oteli", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Edirne", ilce:"Merkez", adres:"Kurtuluş, Ahmet Taşçı Cd. No:7 D:1, 22100 Edirne Merkez/Edirne", lat:41.6922103, lng:26.5764576, tel:"+90 555 186 03 86", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Kapıkule sınır kapısına yakın, Trakya turlarında uğrak noktası; temizlik ve kahvaltı standardı övgüyle anılıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Düzce Avni Akyol Öğretmenevi ve ASO", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Düzce", ilce:"Merkez", adres:"Azmimilli, Azim Sk. No:7, 81020 Düzce/Düzce", lat:40.8334113, lng:31.1651255, tel:"+90 380 523 73 60", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Beklenenin üzerinde temiz olarak değerlendiriliyor; havlu/terlik dahil, fiyat-performans iyi.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Giresun Öğretmen Evi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Giresun", ilce:"Merkez", adres:"Çınarlar, Kaymak Sk. No:10, 28100 Giresun Merkez/Giresun", lat:40.9178586, lng:38.3909005, tel:"+90 454 216 22 16", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Bahçesi güzel olarak tarif ediliyor; kahvaltı beklentinin üzerinde bulunmuş.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Gümüşhane Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Gümüşhane", ilce:"Merkez", adres:"İnönü, İnönü Cd., 29000 Gümüşhane Merkez/Gümüşhane", lat:40.4557933, lng:39.4903964, tel:"+90 456 213 30 07", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Üniversiteye ~10 dk yürüme mesafesinde; asansör bulunmuyor, ısıtma sistemiyle ilgili dönemsel sorun şikayetleri var.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Hakkari Yeni Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Hakkari", ilce:"Merkez", adres:"Dağgöl, Pagan Cd. No:1, 30000 Hakkari Merkez/Hakkari", lat:37.5736743, lng:43.7366375, tel:"", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Şehir merkezinde, dağ manzaralı; terastaki restoran/kafe övgüyle anılıyor, 5 yıldızlı otel konforunda olduğu belirtiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Isparta Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Isparta", ilce:"Merkez", adres:"İstiklal, 6 Mart Atatürk Cd. No:21, 32300 Isparta Merkez/Isparta", lat:37.7658381, lng:30.5566585, tel:"+90 501 733 32 99", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Alt katındaki uygun fiyatlı restoranı (lahmacun, künefe) öne çıkıyor; oda standardı yenileme bekliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Karaman Merkez Öğretmenevi ve ASO Müdürlüğü", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Karaman", ilce:"Merkez", adres:"Fenari, Kazım Karabekir Paşa Cd. No:29, 70100 Karaman Merkez/Karaman", lat:37.1863177, lng:33.2193048, tel:"+90 541 780 24 11", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Şehir merkezinde, temiz ve düzenli; bazı odalarda klima bulunmadığı bildiriliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kastamonu Şerife Bacı Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Kastamonu", ilce:"Merkez", adres:"İnönü, Öğretmenevi Sk. No:10, 37150 Kastamonu Merkez/Kastamonu", lat:41.389382, lng:33.7832131, tel:"+90 366 214 64 40", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Dik ve dar bir sokakta, otopark sıkıntısı olabiliyor; kısa konaklamalar için pratik.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kırıkkale Merkez Öğretmenevi ve Akşam Sanat Okulu", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Kırıkkale", ilce:"Merkez", adres:"Fabrikalar, 6. Sk. No:1, 71100 Kırıkkale Merkez/Kırıkkale", lat:39.8399035, lng:33.5027624, tel:"+90 318 224 54 04", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Arka sokakta, biraz bulunması zor bir konumda; arkasındaki park güzel olarak tarif ediliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kırklareli Öğretmenevi ve ASO", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Kırklareli", ilce:"Merkez", adres:"Demirtaş, Mehmet Akif Cd. No:1, 39000 Kırklareli Merkez/Kırklareli", lat:41.7384989, lng:27.2213764, tel:"+90 554 012 77 52", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Temiz ve şık olarak değerlendiriliyor; kapalı otoparkı (5-6 araçlık) var, otobüs terminaline yürüme mesafesinde.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kırşehir Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Kırşehir", ilce:"Merkez", adres:"Ahievran, Prof. Dr. Mehmet Ali Altın Blv. 730. Sk. D:3, 40100 Kırşehir Merkez/Kırşehir", lat:39.146796, lng:34.1589155, tel:"+90 386 213 45 65", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Şehir merkezinde, butik otel havasında; kahvaltı menüsü sınırlı olabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kütahya Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Kütahya", ilce:"Merkez", adres:"Yıldırım Beyazıt, Abdurrahman Karaa Blv. No:45, 43020 Kütahya Merkez/Kütahya", lat:39.4202608, lng:29.9972609, tel:"+90 534 975 80 90", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Yeni inşa edilmiş bina, tren garına 3 dakika yürüme mesafesinde; temizlik ve donanım standardı yüksek övgü alıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Mardin Artuklu Öğretmenevi ve ASO", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Mardin", ilce:"Artuklu", adres:"13 Mart, 13 Mart Cd. 11. Sk. D:7, 47200 Artuklu/Mardin", lat:37.3235241, lng:40.7249695, tel:"+90 553 923 47 07", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Turistik bölgede yer aldığından doluluk yüksek olabiliyor, online rezervasyon mevcut; oda standardı 3-4 yıldızlı otel seviyesinde tarif ediliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Nevşehir Öğretmenevi ve ASO Müdürlüğü", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Nevşehir", ilce:"Merkez", adres:"2000 Evler, 77. Sk. No:1, 50300 Nevşehir Merkez/Nevşehir", lat:38.6742603, lng:34.7557034, tel:"+90 384 502 41 55", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Yeni bina, turistik noktalara yakın; Kapadokya gezilerinde ekonomik bir konaklama seçeneği.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Niğde Öğretmenevi ve ASO Müdürlüğü", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Niğde", ilce:"Merkez", adres:"İnönü, Feridun Zeren Cd. No:4, 51200 Niğde Merkez/Niğde", lat:37.9704372, lng:34.6767783, tel:"+90 388 232 34 92", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Taş bina, eski ama sevimli bulunuyor; çay bahçesi de mevcut.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Osmaniye Öğretmenevi ve ASO Müdürlüğü", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Osmaniye", ilce:"Merkez", adres:"Esenevler, 15520. Sk. No:12, 80010 Osmaniye Merkez/Osmaniye", lat:37.0770038, lng:36.237191, tel:"+90 530 876 37 79", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Sakin bir mahallede, kahvaltısı övgüyle anılıyor; fiyat-performans iyi.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Siirt Öğretmenevi Otel", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Siirt", ilce:"Merkez", adres:"Yeni, 56000 Siirt Merkez/Siirt", lat:37.9300107, lng:41.9444187, tel:"+90 484 223 12 54", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Standart bir öğretmenevi deneyimi; fiyat-performans dengesi iyi olarak tarif ediliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Tunceli Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Tunceli", ilce:"Merkez", adres:"Atatürk, Cem Emir Cd. No:11, 62000 Tunceli Merkez/Tunceli", lat:39.0694488, lng:39.5331998, tel:"+90 428 212 33 65", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Göl kenarında, 5. kattaki restorandan manzara övgüyle anılıyor; merkeze araçla ~10 dakika.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Uşak Öğretmen Evi ve ASO Müdürlüğü", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Uşak", ilce:"Merkez", adres:"Cumhuriyet, İbrahim Tahtakılıç Cd. No:45, 64100 Uşak Merkez/Uşak", lat:38.6597516, lng:29.3927209, tel:"+90 276 227 13 69", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"⚠️ Yorumlarda binanın eski/bakımsız olduğu ve dönemsel yemek hizmeti sorunları bildiriliyor; oda görmeden ödeme yapmayın.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Yalova Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Yalova", ilce:"Merkez", adres:"Dereağzı Mevki, 77100 Yalova Merkez/Yalova", lat:40.6577527, lng:29.2449843, tel:"+90 226 814 94 00", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Deniz manzaralı, özellikle geceleri şehir ışıkları güzel görünüyor; temizlik konusunda dönemsel şikayetler var.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Yozgat Öğretmenevi ve ASO", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Yozgat", ilce:"Merkez", adres:"Medrese, Sivas Cd., Adnan Menderes Blv. No:147, 66100 Yozgat Merkez/Yozgat", lat:39.8231822, lng:34.8163607, tel:"+90 354 212 80 37", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Otogara bitişik, merkezi konum; bazı odalar yenilenmiş, bazıları eski standart olabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Zonguldak Öğretmen Evi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Zonguldak", ilce:"Kozlu", adres:"İncivez, Milli Egemenlik Cd. No:157, 67100 Kozlu/Zonguldak", lat:41.4542397, lng:31.7611045, tel:"+90 372 257 79 11", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Kamu personeline indirimli, sivillere de uygun fiyatlı; kısa konaklamalar için pratik bir seçenek.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kilis Öğretmenevi ve ASO Müdürlüğü", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Kilis", ilce:"Merkez", adres:"Ekrem Çetin Mah., Prof. Dr. Ali Görpe Cd. No:4, 79000 Kilis Merkez/Kilis", lat:36.7245513, lng:37.1034067, tel:"+90 507 607 57 00", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Personel ilgisi (özellikle resepsiyon) övgüyle anılıyor; asansör bulunmuyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Iğdır Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Iğdır", ilce:"Merkez", adres:"14 Kasım, İrfan Cd. No:53, 76000 Iğdır Merkez/Iğdır", lat:39.9263233, lng:44.0469608, tel:"+90 476 227 67 15", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"⚠️ Yorumlarda nem/küf kokusu ve eskime şikayetleri bildiriliyor; şehir merkezine 10 dakika yürüme mesafesinde, otoparkı yok.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Erzincan Merkez Öğretmenevi ve ASO", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Erzincan", ilce:"Merkez", adres:"Fatih, Hacı Bektaş Veli Cd. No:2, 24100 Erzincan Merkez/Erzincan", lat:39.7449716, lng:39.5091255, tel:"+90 446 226 24 11", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"Yeni açılmış, 5 yıldızlı otelle kıyaslanacak kadar övgü alıyor; hamam/sauna/havuzu da var (2 ay önce açılmış).", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Adıyaman Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Adıyaman", ilce:"Merkez", adres:"Siteler, Atatürk Blv. Yanyolu No:425, 02000 Adıyaman Merkez/Adıyaman", lat:37.7646698, lng:38.3025898, tel:"+90 416 225 04 71", eposta:"", kimler:POLISEVI_KIMLER, ucret:"Kullanıcı paylaşımına göre iki kişilik oda gecelik ~1.530 TL (765 TL/kişi), kahvaltı kişi başı ~107 TL ek ücretli (2025-26 verisi).", aciklama:"Garsonlu servis sunuluyor (self-servis değil); bahçeli ve güvenli otoparklı.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Aksaray Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Aksaray", ilce:"Merkez", adres:"Yeni Sanayi, 68200 Aksaray Merkez/Aksaray", lat:38.3717088, lng:34.0025615, tel:"", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"24 saat sıcak su, temiz ve hijyen standardı övgüyle anılıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Amasya Polis Evi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Amasya", ilce:"Merkez", adres:"Göllü Bağları, Ayça Sk. No:3, 05200 Amasya Merkez/Amasya", lat:40.671342, lng:35.8362832, tel:"+90 358 218 10 73", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Yeşilırmak manzaralı; il emniyet müdürlüğü binasının hemen arkasında, yeni bina.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Artvin Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Artvin", ilce:"Merkez", adres:"Yeni, Edip Dinç Sk. No:19, 08000 Artvin Merkez/Artvin", lat:41.1877632, lng:41.8063965, tel:"", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Tepede, şehir manzaralı; bina yaşı eski, yorumlar dönemsel olarak çok değişken (bazıları çok olumlu, bazıları çok olumsuz).", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Aydın Polis Evi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Aydın", ilce:"Merkez", adres:"Güzelhisar, 09010 Aydın Merkez/Aydın", lat:37.840778, lng:27.850037, tel:"", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Temiz olarak değerlendiriliyor; restoranı (Adana kebap dahil) hizmet veriyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Ağrı Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Ağrı", ilce:"Merkez", adres:"Fırat, 04100 Ağrı Merkez/Ağrı", lat:39.7138544, lng:43.0110184, tel:"+90 472 215 29 76", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Hotel konforunda olduğu belirtiliyor; restoran/kafeterya hizmeti akşam 21:00'de kapanıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Balıkesir Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Balıkesir", ilce:"Merkez", adres:"Paşa Alanı, A. Gaffar Okkan Cd. No:14 D:1, 10020 Merkez/Balıkesir", lat:39.6582361, lng:27.9054701, tel:"+90 266 246 45 10", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Kütüphaneli pastanesi var; merkezi konumda, karşısında market bulunuyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bartın Polis Misafirevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Bartın", ilce:"Merkez", adres:"Şiremirçavuş, 74000 Bartın Merkez/Bartın", lat:41.6143033, lng:32.3230126, tel:"+90 378 227 24 69", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Yenilenmiş odaları var; restoran hizmeti bazı dönemlerde aktif olmayabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Batman Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Batman", ilce:"Merkez", adres:"Kültür, 72060 Batman Merkez/Batman", lat:37.9014511, lng:41.1301447, tel:"", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Arka bahçesinde çay bahçesi ve çocuk oyun alanı var; bina yaşı eski.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bayburt Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Bayburt", ilce:"Merkez", adres:"Şeyh Hayran, Cumhuriyet Cd. No:18, 69000 Bayburt Merkez/Bayburt", lat:40.259591, lng:40.2266441, tel:"", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Ramazan ayında iftar için ekonomik bir seçenek olarak da tercih ediliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bilecik Polis Evi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Bilecik", ilce:"Merkez", adres:"Hürriyet 1. OSB, Eskişehir İstanbul Asfaltı 72/1, 11000 Bilecik Merkez/Bilecik", lat:40.165634, lng:29.9777066, tel:"+90 228 212 80 53", eposta:"", kimler:POLISEVI_KIMLER, ucret:"Kullanıcı paylaşımına göre üç kişilik oda (kamu personeli) ~1.050-1.300 TL/gece, akşam yemeği ~150 TL, kahvaltı ~100 TL ek ücretli.", aciklama:"Şehir merkezinde, kendi kantini var; bazı odalarda klima/sineklik bulunmuyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bingöl Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Bingöl", ilce:"Merkez", adres:"İnönü, Kültür Cd. No:46, 12000 Bingöl", lat:38.885712, lng:40.5018979, tel:"+90 426 213 19 20", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Yenilenmiş bölümleri var, köprü manzaralı çocuk oyun alanı ve piknik alanı bulunuyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bitlis Polis Evi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Bitlis", ilce:"Merkez", adres:"Atatürk, Feyzullah Ensari Cd. No:139, 13000 Bitlis Merkez/Bitlis", lat:38.4150986, lng:42.1194544, tel:"+90 434 226 55 07", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Havuz, hamam ve sauna gibi ek tesisleri var; dağ manzaralı odaları övgüyle anılıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bolu Dağı Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Bolu", ilce:"Merkez", adres:"Bolu Düzce Yolu, 14030 Yeşilköy/Bolu Merkez/Bolu", lat:40.7354399, lng:31.426736, tel:"+90 374 225 21 00", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Tarihi bina ve anıtlarla çevrili; D-100 üzerinde, transit geçişte de uğranabilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Burdur Polis Evi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Burdur", ilce:"Merkez", adres:"Burç, Nur Cami Sk. No:1, 15200 Burdur Merkez/Burdur", lat:37.71755, lng:30.281541, tel:"+90 248 233 71 31", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"⚠️ Resmi duyuruda konaklama hizmetinin geçici olarak durdurulduğu bildirilmiş; gitmeden mutlaka arayıp teyit edin.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Düzce Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Düzce", ilce:"Merkez", adres:"Camikebir, Mareşal Fevzi Çakmak Sk. No:11, 81020 Düzce/Düzce", lat:40.8385399, lng:31.1584624, tel:"+90 380 524 73 19", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"En ekonomik ve temiz polisevlerinden biri olarak değerlendiriliyor; merkezi konumda otopark sıkıntısı olabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Edirne Polisevi (VIP)", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Edirne", ilce:"Merkez", adres:"Mithat Paşa, Maarif Cd. No:30 D:32, 22020 Edirne Merkez/Edirne", lat:41.6745044, lng:26.5515887, tel:"+90 284 214 68 05", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"1800'lerden kalma tarihi bir binada; merkezi konum, yürüme mesafesinde tarihi yerler.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Elazığ Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Elazığ", ilce:"Merkez", adres:"Ataşehir, 2143. Sk. No:6, 23100 Elazığ Merkez/Elazığ", lat:38.6513632, lng:39.1542569, tel:"+90 424 247 69 11", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Geniş ve yüksek tavanlı odalarıyla övgüyle anılıyor; şehir merkezine biraz uzak.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Erzincan Polis Evi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Erzincan", ilce:"Merkez", adres:"İnönü, Halit Paşa Cd., 24180 Erzincan Merkez/Erzincan", lat:39.7472194, lng:39.4712309, tel:"+90 446 223 38 91", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Şehir merkezinde, standart bir polisevi deneyimi sunuyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Hakkari Polis Evi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Hakkari", ilce:"Merkez", adres:"Bulak, İstiklal Cd. No:40, 30000 Hakkari Merkez/Hakkari", lat:37.5754182, lng:43.7390529, tel:"+90 438 211 43 39", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Bölge koşulları göz önüne alındığında değerli bir tesis olarak görülüyor; bazı dönemlerde temizlik şikayetleri bildiriliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Isparta Polis Evi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Isparta", ilce:"Merkez", adres:"Şevket Savlu Cd. No:44/48 D:68, Halıkent, 32040 Isparta Merkez/Isparta", lat:37.7519178, lng:30.5765101, tel:"+90 246 242 96 55", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Resepsiyonda yöresel ürünler satılıyor; temiz ve düzenli olarak övgüyle anılıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Karaman Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Karaman", ilce:"Merkez", adres:"Cumhuriyet, 70100 Karaman Merkez/Karaman", lat:37.188781, lng:33.2290058, tel:"+90 338 212 47 26", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Aylık yemek menüsünü Instagram'da paylaşıyor; garsonlu servis sunuluyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kastamonu Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Kastamonu", ilce:"Merkez", adres:"Saraçlar, 37100 Kastamonu Merkez/Kastamonu", lat:41.36, lng:33.7563889, tel:"+90 505 318 37 03", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Şehir dışında sakin bir konumda; kendi aracınızla gitmeniz önerilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kilis Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Kilis", ilce:"Merkez", adres:"Ekrem Çetin, Vali Konağı Yanı, 79000 Kilis Merkez/Kilis", lat:36.7202279, lng:37.0923125, tel:"+90 348 814 14 24", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Yenilenmiş, manzaralı bir tesis; restoranı da hizmet veriyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kütahya Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Kütahya", ilce:"Merkez", adres:"Vefa, Atatürk Blv., 43020 Kütahya Merkez/Kütahya", lat:39.4313774, lng:30.0013637, tel:"+90 505 318 43 11", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Restoranı övgü alıyor; fabrika bölgesine yakın olduğundan sabahları makine sesi gelebiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kırklareli Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Kırklareli", ilce:"Merkez", adres:"Karacaibrahim, Fevzi Çakmak Blv. No:7, 39000 Kırklareli Merkez/Kırklareli", lat:41.733457, lng:27.223591, tel:"+90 288 214 29 54", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Tarihi bir binada (eski Sağlık Müdürlüğü); merkezi konum, yenileme ihtiyacı olabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kırıkkale Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Kırıkkale", ilce:"Merkez", adres:"Çalılıöz, 466. Sk. (63. Sk.) No:10, 71100 Kırıkkale Merkez/Kırıkkale", lat:39.850103, lng:33.491102, tel:"+90 318 224 25 42", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Oyun/kafe alanı da var; hotel doluluğu yüksek dönemlerde alternatif bir konaklama seçeneği.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kırşehir Polis Evi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Kırşehir", ilce:"Merkez", adres:"Ahievran, Mehmet Ali Yapıcı Blv. No:1, 40100 Kırşehir Merkez/Kırşehir", lat:39.1466712, lng:34.1598625, tel:"", eposta:"", kimler:POLISEVI_KIMLER, ucret:"Kullanıcı paylaşımına göre çift kişi toplam ~1.070 TL/gece (kahvaltı/yemek hariç).", aciklama:"Yemekhanesi övgüyle anılıyor; fiyat listesi makul olarak değerlendiriliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Malatya Polis Evi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Malatya", ilce:"Battalgazi", adres:"Orduzu, 44170 Battalgazi/Malatya", lat:38.3506577, lng:38.3884802, tel:"", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Göl manzaralı bahçesi övgüyle anılıyor; 4 yıldızlı otel konforunda olduğu belirtiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Manisa Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Manisa", ilce:"Merkez", adres:"Akmescit, 45110 Manisa Merkez/Manisa", lat:38.6149167, lng:27.3998051, tel:"+90 236 250 03 55", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Kahvaltı parça parça ücretlendiriliyor (israfı azaltmak için); kafeteryası gece 22:30'a kadar açık. Yorumlarda geçen ~195 TL/gün rakamı muhtemelen birkaç yıl önceki bir tarihe ait, güncel fiyatla tutarsız — gerçek tarife için tesisi arayın.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Mardin Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Mardin", ilce:"Merkez", adres:"Yenişehir, Kızıltepe Blv., Artuklu kavşağı, 47200 Mardin Merkez/Mardin", lat:37.3252513, lng:40.7156989, tel:"+90 482 212 98 72", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Şehir merkezinde, güvenlik ve temizlik övgüyle anılıyor; pizza menüsü beğeniliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Muş Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Muş", ilce:"Merkez", adres:"Hürriyet, İstasyon Cd., Atatürk Blv., 49200 Muş Merkez/Muş", lat:38.755414, lng:41.5071, tel:"+90 436 212 43 45", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Standart bir polisevi deneyimi sunuyor; gitmeden telefonla doluluk durumu teyit edilmeli.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Nevşehir Polis Evi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Nevşehir", ilce:"Merkez", adres:"Güzelyurt, Ürgüp Cd. No:45, 50300 Nevşehir Merkez/Nevşehir", lat:38.6310333, lng:34.7384184, tel:"+90 384 213 57 51", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Giriş sırasında bölgesel turizm bilgisi (Kapadokya balon turları vb.) veriliyor; suit oda seçeneği mevcut.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Niğde Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Niğde", ilce:"Merkez", adres:"Nar, 51100 Niğde Merkez/Niğde", lat:37.966751, lng:34.7014892, tel:"+90 388 232 97 90", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Asansörlü ve otopark sıkıntısız; oda büyüklüğü konusunda yorumlar değişken.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Ordu Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Ordu", ilce:"Altınordu", adres:"Akyazı, Atatürk Blv. No:275, 52200 Altınordu/Ordu", lat:40.9767829, lng:37.9054755, tel:"+90 452 234 49 11", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Deniz manzaralı bölümleri övgüyle anılıyor; merkezi konum.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Osmaniye Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Osmaniye", ilce:"Merkez", adres:"Akyar, 80000 Osmaniye Merkez/Osmaniye", lat:37.0506218, lng:36.1941941, tel:"+90 328 825 95 95", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Geniş bahçesinde tavus kuşu/tavşan/tavuk gibi hayvanlar var; çocuklu aileler için büyük oyun alanı mevcut.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Rize Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Rize", ilce:"Merkez", adres:"Alipaşa, Meydanlar Sk. No:4, 53100 Rize Merkez/Rize", lat:41.022705, lng:40.4628486, tel:"+90 464 223 44 21", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Çay bahçeleri arasından geçilen yolda, manzarası 'efsanevi' olarak tarif ediliyor; en az 1 hafta önceden rezervasyon önerilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Samsun Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Samsun", ilce:"İlkadım", adres:"Zafer, Cumhuriyet Cd. No:27, 55060 İlkadım/Samsun", lat:41.2871238, lng:36.3387642, tel:"+90 362 230 89 00", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Restoranı (pide) ve manzarası övgüyle anılıyor; hijyen standardı yüksek.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Siirt Polisevi Şube Müdürlüğü", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Siirt", ilce:"Merkez", adres:"Bahçelievler, Hayrettin Şişman Cd. No:2, 56000 Siirt Merkez/Siirt", lat:37.9347304, lng:41.9309839, tel:"+90 484 223 70 83", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Çocuklu aileler için oyun alanı/gözetmeni var; ulaşımı kolay.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Uşak Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Uşak", ilce:"Merkez", adres:"Elmalıdere, İzci Sk. No:32, 64400 Uşak Merkez/Uşak", lat:38.680357, lng:29.4107826, tel:"+90 505 318 64 25", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Hem restoran hem polisevi olarak işletiliyor; dışarıdan gelenler de restoranını kullanabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Yozgat Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Yozgat", ilce:"Merkez", adres:"Bahçeşehir, 66200 Yozgat Merkez/Yozgat", lat:39.8281275, lng:34.8341111, tel:"+90 354 212 91 40", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Çocuklu aileler için oyun parkı olan odalar var; merkezi ve sakin bir konumda.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Zonguldak Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Zonguldak", ilce:"Kozlu", adres:"Güney, 67500 Kozlu/Zonguldak", lat:41.447923, lng:31.7538421, tel:"+90 372 266 04 40", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Bir tarafı deniz, bir tarafı orman manzaralı; asansör bulunmuyor, üst katlar için hazırlıklı olun.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Çorum Polis Evi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Çorum", ilce:"Merkez", adres:"Karakeçili, Gazi Cd. No:107, 19030 Çorum Merkez/Çorum", lat:40.559033, lng:34.971594, tel:"", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Standart bir polisevi deneyimi sunuyor; temizlik övgüyle anılıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Şırnak Polis Evi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Şırnak", ilce:"Merkez", adres:"Bahçelievler, Siirt Cd. No:13, 73000 Şırnak Merkez/Şırnak", lat:37.5207896, lng:42.4527972, tel:"", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Oda/restoran temiz; kafe ve spor salonu hizmetlerinde dönemsel personel/temizlik şikayetleri var.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Afyonkarahisar Polis Evi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Afyonkarahisar", ilce:"Merkez", adres:"Dörtyol, İzmir Yolu 9. Km., 03218 Afyonkarahisar Merkez/Afyonkarahisar", lat:38.7885639, lng:30.4629048, tel:"+90 272 252 54 53", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Şehir merkezine biraz uzak, İzmir yolu üzerinde; kendi aracınızla gitmeniz önerilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Hatay Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Hatay", ilce:"Antakya", adres:"Odabaşı, Atatürk 10. Blv. No:43, 31001 Antakya/Hatay", lat:36.2263784, lng:36.1640042, tel:"+90 505 318 31 15", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Depremden sonra yeniden inşa edilen, övgüyle anılan bir tesis; otopark girişi ana caddeden olduğundan dikkatli olun.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kahramanmaraş Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Kahramanmaraş", ilce:"Dulkadiroğlu", adres:"Bahçelievler, İl Emniyet Müdürlüğü Yerleşkesi, 46200 Dulkadiroğlu/Kahramanmaraş", lat:37.5662374, lng:36.9363737, tel:"+90 344 221 25 55", eposta:"", kimler:POLISEVI_KIMLER, ucret:"Kullanıcı paylaşımına göre (Mayıs 2026) kamu personeli çift kişilik oda ~2.100 TL/gece, kahvaltı ~120 TL ek ücretli; 3 kişilik paylaşımlı oda kişi başı 700 TL+.", aciklama:"Yeni bina, ses yalıtımı iyi olarak değerlendiriliyor; il emniyet müdürlüğü yerleşkesi içinde.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Karabük Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Karabük", ilce:"Merkez", adres:"Ergenekon, Ergenekon Cd. No:14, 78200 Karabük Merkez/Karabük", lat:41.1974373, lng:32.6248321, tel:"+90 370 412 61 20", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Safranbolu'ya araçla ~8 dakika; bina yaşı eski, klima bulunmuyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kars Polis Evi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Kars", ilce:"Merkez", adres:"Ortakapı, Faikbey Cd. No:13, 36100 Kars Merkez/Kars", lat:40.6025276, lng:43.0934829, tel:"+90 474 502 36 55", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Asansörlü, merkezi konum; kayak tatili için de tercih ediliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Sinop Polis Evi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Sinop", ilce:"Merkez", adres:"Gelincik, 100. Sk. No:9, 57000 Sinop Merkez/Sinop", lat:42.0198338, lng:35.1268637, tel:"+90 368 261 29 90", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Deniz manzaralı, ekonomik bir restoranı var; oda donanımı sade (kettle/ayna bulunmayabiliyor).", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Sivas Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Sivas", ilce:"Merkez", adres:"Kızılırmak, M. Fethi Akyüz Cd. No:22, 58070 Sivas Merkez/Sivas", lat:39.738714, lng:37.030898, tel:"+90 505 318 58 12", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Yeni bina, otel konforunda olarak övgüyle anılıyor; otopark girişi biraz dolambaçlı olabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Tekirdağ Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Tekirdağ", ilce:"Merkez", adres:"Ertuğrul, Yalı Sk. No:19, 59100 Tekirdağ Merkez/Tekirdağ", lat:40.976272, lng:27.5148331, tel:"+90 282 260 41 01", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Deniz kenarında, yenilenmiş bir tesis; en az 10 gün önceden rezervasyon önerilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Van Orduevi", kurum:"Milli Savunma Bakanlığı", kategori:"Orduevi", il:"Van", ilce:"Merkez", adres:"Şerefiye, Ordu Cd. No:68, 65140 Van Merkez/Van", lat:38.4990824, lng:43.4008303, tel:"", eposta:"", kimler:ORDUEVI_KIMLER, ucret:ORDUEVI_UCRET, aciklama:"Restoranı ve bahçesi (cam kapalı oturma alanı) övgüyle anılıyor; bazı odalarda klima/sineklik bulunmadığı bildiriliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"DSİ Giresun Misafirhanesi", kurum:"Devlet Su İşleri Genel Müdürlüğü", kategori:"Misafirhane", il:"Giresun", ilce:"Merkez", adres:"Çıtlakkale, 28200 Giresun Merkez/Giresun", lat:40.9068499, lng:38.3612197, tel:"", eposta:"", kimler:DSI_KIMLER, ucret:DSI_UCRET, aciklama:"Şehir merkezine yakın, çok temiz ve hijyenik olarak övgüyle anılıyor; Karadeniz turlarında uğrak noktası.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Çanakkale DSİ Misafirhanesi", kurum:"Devlet Su İşleri Genel Müdürlüğü", kategori:"Misafirhane", il:"Çanakkale", ilce:"Merkez", adres:"Barbaros, Aziziye Cd. No:85, 17020 Çanakkale Merkez/Çanakkale", lat:40.1368289, lng:26.4047047, tel:"+90 286 213 91 09", eposta:"", kimler:DSI_KIMLER, ucret:DSI_UCRET, aciklama:"Merkeze çok yakın, otoparklı; yemek hizmeti yok, sade ama temiz bir konaklama sunuyor.", sonKontrol:"Haziran 2026 — Google Places"}
+];
+
+const KATEGORI_ICON = {
+  "Misafirhane":"🛌","Dinlenme Tesisi / Kamp":"🏖️","Öğretmenevi":"🎓",
+  "Polisevi":"🚓","Orduevi":"⚔️","Düğün Salonu":"💍","Spor Tesisi":"🏋️","Diğer":"🏛️"
+};
+
+/* ---------- State ---------- */
+let ALL = [];
+let firestoreDb = null;
+let isAdmin = false;
+let map = null;
+let markersLayer = null;
+let userLoc = null;        // {lat, lng}
+let userMarker = null;
+let sortByDistance = false;
+
+/* ---------- Mesafe hesabı (haversine, km) ---------- */
+function distanceKm(lat1, lng1, lat2, lng2){
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI/180;
+  const dLng = (lng2 - lng1) * Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+/* ---------- Firebase init (varsa) ---------- */
+function tryInitFirebase(){
+  try{
+    if(!FIREBASE_CONFIG || !FIREBASE_CONFIG.projectId){ return false; }
+    firebase.initializeApp(FIREBASE_CONFIG);
+    firestoreDb = firebase.firestore();
+    return true;
+  }catch(e){
+    console.warn("Firebase başlatılamadı, demo moda geçiliyor:", e);
+    return false;
+  }
+}
+
+async function loadData(){
+  const ok = tryInitFirebase();
+  if(ok){
+    try{
+      const snap = await firestoreDb.collection("tesisler").get();
+      if(!snap.empty){
+        ALL = snap.docs.map(d => ({id:d.id, ...d.data()}));
+        document.getElementById("dataModeNote").textContent = "Veri kaynağı: Firebase Firestore";
+        return;
+      }
+    }catch(e){
+      console.warn("Firestore okunamadı, demo veriye düşülüyor:", e);
+    }
+  }
+  // Firebase bağlı değilse (veya boşsa) admin panelini tamamen gizle:
+  // hem güvenlik için (ADMIN_PASS sayfa kaynağında düz metin) hem de kafa karışıklığını
+  // önlemek için (Firebase yoksa eklenen kayıtlar zaten kalıcı olmuyor).
+  if(!ok){
+    const toggleBtn = document.getElementById("adminToggle");
+    if(toggleBtn) toggleBtn.style.display = "none";
+  }
+  ALL = DEMO_DATA.map((d,i) => ({id:"starter-"+i, ...d}));
+  document.getElementById("dataModeNote").textContent = "Veri kaynağı: Google Places + resmi kaynak taraması (Firebase bağlanınca otomatik güncellenir)";
+}
+
+/* ---------- Render: stats + filters ---------- */
+function renderStatsAndFilters(){
+  const iller = [...new Set(ALL.map(t=>t.il).filter(Boolean))].sort();
+  const kategoriler = [...new Set(ALL.map(t=>t.kategori).filter(Boolean))].sort();
+  const kurumlar = new Set(ALL.map(t=>t.kurum).filter(Boolean));
+
+  document.getElementById("statTotal").textContent = ALL.length;
+  document.getElementById("statIl").textContent = iller.length;
+  document.getElementById("statKurum").textContent = kurumlar.size;
+
+  const ilSel = document.getElementById("ilFilter");
+  ilSel.innerHTML = '<option value="">Tüm İller</option>' + iller.map(i=>`<option value="${i}">${i}</option>`).join("");
+  const katSel = document.getElementById("katFilter");
+  katSel.innerHTML = '<option value="">Tüm Türler</option>' + kategoriler.map(k=>`<option value="${k}">${k}</option>`).join("");
+}
+
+/* ---------- Filtering ---------- */
+function getFiltered(){
+  const q = document.getElementById("searchInput").value.toLocaleLowerCase("tr");
+  const il = document.getElementById("ilFilter").value;
+  const kat = document.getElementById("katFilter").value;
+  let list = ALL.filter(t=>{
+    if(il && t.il !== il) return false;
+    if(kat && t.kategori !== kat) return false;
+    if(q){
+      const hay = `${t.ad} ${t.kurum} ${t.il} ${t.ilce}`.toLocaleLowerCase("tr");
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  if(sortByDistance && userLoc){
+    list = list.map(t=>{
+      if(t.lat && t.lng){
+        t._distance = distanceKm(userLoc.lat, userLoc.lng, parseFloat(t.lat), parseFloat(t.lng));
+      }else{
+        t._distance = null;
+      }
+      return t;
+    }).sort((a,b)=>{
+      if(a._distance == null) return 1;
+      if(b._distance == null) return -1;
+      return a._distance - b._distance;
+    });
+  }
+  return list;
+}
+
+/* ---------- List render ---------- */
+function renderList(){
+  const list = getFiltered();
+  const wrap = document.getElementById("listView");
+  if(list.length === 0){
+    wrap.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><h3>Sonuç bulunamadı</h3><p>Arama veya filtreleri değiştirip tekrar dene.</p></div>`;
+    return;
+  }
+  wrap.innerHTML = list.map((t,idx)=>`
+    <article class="ticket" data-id="${t.id}">
+      <div class="ticket-perf"></div>
+      <div class="ticket-body">
+        <div class="stamp">${KATEGORI_ICON[t.kategori] || "🏛️"}</div>
+        <h3>${t.ad || "—"}${(sortByDistance && t._distance != null) ? `<span class="dist-badge">${t._distance.toFixed(1)} km</span>` : ""}</h3>
+        <p class="kurum">${t.kurum || ""}</p>
+        <p class="loc">${t.il || ""}${t.ilce ? " · " + t.ilce : ""}</p>
+        <span class="kategori-badge">${t.kategori || "Diğer"}</span>
+      </div>
+      <div class="ticket-perf"></div>
+      <div class="ticket-foot">
+        <span class="serial mono">NO ${String(idx+1).padStart(4,"0")}</span>
+        <button class="detay-btn" data-id="${t.id}">Detay →</button>
+      </div>
+    </article>
+  `).join("");
+
+  wrap.querySelectorAll(".detay-btn").forEach(btn=>{
+    btn.addEventListener("click", ()=> openDetail(btn.dataset.id));
+  });
+}
+
+/* ---------- Map render ---------- */
+function ensureMap(){
+  if(map) return;
+  map = L.map("map").setView([39.0, 35.2], 6);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap katkıda bulunanları"
+  }).addTo(map);
+  markersLayer = L.layerGroup().addTo(map);
+}
+function renderMap(){
+  ensureMap();
+  markersLayer.clearLayers();
+  const list = getFiltered().filter(t=>t.lat && t.lng);
+  list.forEach(t=>{
+    const m = L.marker([parseFloat(t.lat), parseFloat(t.lng)]).addTo(markersLayer);
+    const distLine = (sortByDistance && t._distance != null) ? `<br><b>${t._distance.toFixed(1)} km</b> uzakta` : "";
+    m.bindPopup(`<b>${t.ad}</b><br>${t.kurum || ""}<br>${t.il || ""} ${t.ilce || ""}${distLine}<br><a href="#" data-id="${t.id}" class="map-detail-link">Detayı gör</a>`);
+    m.on("popupopen", ()=>{
+      document.querySelectorAll(".map-detail-link").forEach(a=>{
+        a.addEventListener("click", (e)=>{ e.preventDefault(); openDetail(a.dataset.id); });
+      });
+    });
+  });
+  if(userLoc){
+    if(userMarker) markersLayer.removeLayer(userMarker);
+    userMarker = L.circleMarker([userLoc.lat, userLoc.lng], {
+      radius:9, color:"#B33B2E", fillColor:"#B33B2E", fillOpacity:.9, weight:2
+    }).addTo(markersLayer);
+    userMarker.bindPopup("<b>Buradasınız</b>");
+    map.setView([userLoc.lat, userLoc.lng], 9);
+  }
+  setTimeout(()=> map.invalidateSize(), 50);
+}
+
+/* ---------- Detail modal ---------- */
+function openDetail(id){
+  const t = ALL.find(x=>x.id === id);
+  if(!t) return;
+  const overlay = document.getElementById("detailOverlay");
+  const mapsLink = (t.lat && t.lng) ? `https://www.google.com/maps?q=${t.lat},${t.lng}` : null;
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <button class="modal-close" id="modalCloseBtn">&times;</button>
+      <div class="inner">
+        <h2>${t.ad || ""}</h2>
+        <p class="m-kurum">${t.kurum || ""} · <span class="kategori-badge">${t.kategori || "Diğer"}</span></p>
+        <div class="m-row"><span class="m-label">İl / İlçe</span><span class="m-val">${t.il || "—"}${t.ilce ? " / " + t.ilce : ""}</span></div>
+        <div class="m-row"><span class="m-label">Adres</span><span class="m-val">${t.adres || "—"}</span></div>
+        <div class="m-row"><span class="m-label">Telefon</span><span class="m-val">${t.tel || "—"}</span></div>
+        <div class="m-row"><span class="m-label">E-posta</span><span class="m-val">${t.eposta || "—"}</span></div>
+        <div class="m-row"><span class="m-label">Kimler Kullanır</span><span class="m-val">${t.kimler || "—"}</span></div>
+        <div class="m-row"><span class="m-label">Ücret Notu</span><span class="m-val">${t.ucret || "—"}</span></div>
+        ${t.aciklama ? `<div class="m-row"><span class="m-label">Açıklama</span><span class="m-val">${t.aciklama}</span></div>` : ""}
+        ${t.sonKontrol ? `<div class="m-row"><span class="m-label">Son Kontrol</span><span class="m-val">${t.sonKontrol} — fiyat ve kullanım koşulları yıllık değişebilir, kesinleştirmek için tesisi arayın.</span></div>` : ""}
+        <div class="m-actions">
+          ${mapsLink ? `<a class="btn btn-primary" href="${mapsLink}" target="_blank" rel="noopener">Haritada Aç</a>` : ""}
+          ${t.tel ? `<a class="btn btn-ghost" href="tel:${t.tel.replace(/\\s/g,"")}">Ara</a>` : ""}
+        </div>
+      </div>
+    </div>
+  `;
+  overlay.classList.remove("hidden");
+  document.getElementById("modalCloseBtn").addEventListener("click", closeDetail);
+  overlay.addEventListener("click", (e)=>{ if(e.target === overlay) closeDetail(); });
+}
+function closeDetail(){
+  document.getElementById("detailOverlay").classList.add("hidden");
+}
+
+/* ---------- View toggle ---------- */
+/* ---------- Konuma yakın tesisler ---------- */
+const nearMeBtn = document.getElementById("nearMeBtn");
+nearMeBtn.addEventListener("click", ()=>{
+  if(sortByDistance){
+    // zaten aktif -> kapat, varsayılan sıraya dön
+    sortByDistance = false;
+    nearMeBtn.classList.remove("active");
+    nearMeBtn.textContent = "📍 Bana Yakın Olanlar";
+    refreshCurrentView();
+    return;
+  }
+  if(!navigator.geolocation){
+    alert("Tarayıcınız konum servisini desteklemiyor.");
+    return;
+  }
+  nearMeBtn.disabled = true;
+  nearMeBtn.textContent = "📍 Konum alınıyor…";
+  navigator.geolocation.getCurrentPosition(
+    (pos)=>{
+      userLoc = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+      sortByDistance = true;
+      nearMeBtn.disabled = false;
+      nearMeBtn.classList.add("active");
+      nearMeBtn.textContent = "📍 Yakınlığa göre sıralı ✓";
+      refreshCurrentView();
+    },
+    (err)=>{
+      nearMeBtn.disabled = false;
+      nearMeBtn.textContent = "📍 Bana Yakın Olanlar";
+      if(err.code === err.PERMISSION_DENIED){
+        alert("Konum izni verilmedi. Tarayıcı ayarlarından bu site için konum iznini açabilirsin.");
+      }else{
+        alert("Konum alınamadı: " + err.message);
+      }
+    },
+    {enableHighAccuracy:true, timeout:10000}
+  );
+});
+
+document.querySelectorAll(".view-toggle button").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".view-toggle button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    const view = btn.dataset.view;
+    document.getElementById("listView").classList.toggle("hidden", view !== "list");
+    document.getElementById("mapView").classList.toggle("hidden", view !== "map");
+    if(view === "map") renderMap();
+  });
+});
+
+/* ---------- Search/filter listeners ---------- */
+["searchInput","ilFilter","katFilter"].forEach(id=>{
+  document.getElementById(id).addEventListener("input", refreshCurrentView);
+  document.getElementById(id).addEventListener("change", refreshCurrentView);
+});
+function refreshCurrentView(){
+  const mapActive = !document.getElementById("mapView").classList.contains("hidden");
+  if(mapActive) renderMap(); else renderList();
+}
+
+/* ---------- Admin ---------- */
+document.getElementById("adminToggle").addEventListener("click", ()=>{
+  document.getElementById("adminPanel").classList.toggle("hidden");
+});
+document.getElementById("passSubmit").addEventListener("click", ()=>{
+  const val = document.getElementById("adminPass").value;
+  if(val === ADMIN_PASS){
+    isAdmin = true;
+    document.getElementById("passRow").classList.add("hidden");
+    document.getElementById("adminGrid").style.display = "grid";
+  }else{
+    alert("Şifre yanlış.");
+  }
+});
+
+document.getElementById("addForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const newTesis = {
+    ad: document.getElementById("f_ad").value.trim(),
+    kurum: document.getElementById("f_kurum").value.trim(),
+    kategori: document.getElementById("f_kategori").value,
+    il: document.getElementById("f_il").value.trim(),
+    ilce: document.getElementById("f_ilce").value.trim(),
+    adres: document.getElementById("f_adres").value.trim(),
+    lat: parseFloat(document.getElementById("f_lat").value) || null,
+    lng: parseFloat(document.getElementById("f_lng").value) || null,
+    tel: document.getElementById("f_tel").value.trim(),
+    eposta: document.getElementById("f_eposta").value.trim(),
+    kimler: document.getElementById("f_kimler").value.trim(),
+    ucret: document.getElementById("f_ucret").value.trim(),
+    aciklama: document.getElementById("f_aciklama").value.trim()
+  };
+
+  const msg = document.getElementById("saveMsg");
+  if(firestoreDb){
+    try{
+      const ref = await firestoreDb.collection("tesisler").add(newTesis);
+      ALL.push({id:ref.id, ...newTesis});
+      msg.textContent = "Kaydedildi (Firestore).";
+    }catch(err){
+      console.error(err);
+      msg.textContent = "Firestore'a kaydedilemedi, sadece bu oturumda gösteriliyor.";
+      ALL.push({id:"local-"+Date.now(), ...newTesis});
+    }
+  }else{
+    ALL.push({id:"local-"+Date.now(), ...newTesis});
+    msg.textContent = "Demo modda: bu kayıt yalnızca sayfa açıkken görünür, yenilenince kaybolur.";
+  }
+  document.getElementById("addForm").reset();
+  renderStatsAndFilters();
+  refreshCurrentView();
+});
+
+/* ---------- Boot ---------- */
+(async function init(){
+  await loadData();
+  renderStatsAndFilters();
+  renderList();
+})();
+</script>
+</body>
+</html>
