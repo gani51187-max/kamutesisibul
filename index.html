@@ -285,9 +285,12 @@
   <button id="adminToggle">Yönetici Girişi</button>
   <div id="adminPanel" class="hidden">
     <div class="pass-row" id="passRow">
-      <input id="adminPass" type="password" placeholder="Yönetici şifresi">
+      <input id="adminEmail" type="email" placeholder="E-posta" autocomplete="username">
+      <input id="adminPass" type="password" placeholder="Şifre" autocomplete="current-password">
       <button class="btn btn-primary" id="passSubmit">Giriş</button>
+      <p id="loginMsg" style="font-size:12px; color:#B33B2E; margin-top:6px;"></p>
     </div>
+    <button id="logoutBtn" class="hidden" style="margin-bottom:12px;">Çıkış Yap</button>
     <div id="adminGrid">
       <div>
         <h3>Yeni Tesis Ekle</h3>
@@ -297,7 +300,7 @@
             <div class="frow"><label>Bağlı Kurum</label><input required id="f_kurum"></div>
             <div class="frow"><label>Tür</label>
               <select id="f_kategori">
-                <option>Misafirhane</option><option>Dinlenme Tesisi / Kamp</option>
+                <option>Misafirhane</option><option>Dinlenme Tesisi / Kamp</option><option>Uygulama Oteli</option>
                 <option>Öğretmenevi</option><option>Polisevi</option><option>Orduevi</option>
                 <option>Düğün Salonu</option><option>Spor Tesisi</option><option>Diğer</option>
               </select>
@@ -332,6 +335,7 @@
 <!-- Firebase (compat SDK) — config boşsa otomatik demo moda düşer -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
 <script>
 /* =========================================================
@@ -339,15 +343,17 @@
    Boş bırakırsan site DEMO veriyle çalışır.
    ========================================================= */
 const FIREBASE_CONFIG = {
-  // apiKey: "...",
-  // authDomain: "...",
-  // projectId: "...",
-  // storageBucket: "...",
-  // messagingSenderId: "...",
-  // appId: "..."
+  apiKey: "AIzaSyADm38OMx1U2YUwuhgtIPw-GeUUYN_Blac",
+  authDomain: "kamutesisibul.firebaseapp.com",
+  projectId: "kamutesisibul",
+  storageBucket: "kamutesisibul.firebasestorage.app",
+  messagingSenderId: "760043904981",
+  appId: "1:760043904981:web:1cc3ae37556462ec6b275c",
+  measurementId: "G-NN94KPYE6D"
 };
 
-const ADMIN_PASS = "tesis2026"; // DEMO amaçlı — canlıya çıkmadan önce değiştir / Firebase Auth kullan.
+// Not: Yönetici girişi artık Firebase Authentication ile yapılıyor (bkz. aşağıdaki passSubmit listener).
+// ADMIN_PASS gibi düz metin bir şifre artık kullanılmıyor — bu, sayfa kaynağında şifre sızıntısını engeller.
 
 /* ---------- Başlangıç veri seti (Google Places + resmi kaynak taraması ile derlendi, Haziran 2026) ---------- */
 const OGRETMENEVI_KIMLER = "MEB personeli ve emeklileri ile yakınları (en avantajlı tarife) → diğer kamu personeli ve emekliler (indirimli) → öğrenciler → sivil vatandaşlar (tam ücret, yer kalırsa).";
@@ -364,6 +370,18 @@ const KARAYOLLARI_KIMLER = "Karayolları Genel Müdürlüğü personeli ve emekl
 const KARAYOLLARI_UCRET = "Kamu personeli için indirimli, sivil vatandaşlar için daha yüksek tarife uygulanır; net fiyat ve doluluk için tesis aranmalıdır.";
 const BANKA_KIMLER = "Öncelik bankanın kendi personeli, emeklileri ve birinci derece yakınlarındadır. ⚠️ Kaynaklar çelişkili: bazı şubelerin kurum dışına hiç hizmet vermediği, bazılarının doluluk durumuna göre sivil misafir aldığı belirtiliyor — gitmeden mutlaka arayıp teyit edin.";
 const BANKA_UCRET = "Kurum personeli için düşük sabit ücret; kurum dışı misafir kabul eden tesislerde ayrı (daha yüksek) sivil tarife uygulanır. Net bilgi tesisten alınmalıdır.";
+const MALIYE_KIMLER = "Hazine ve Maliye Bakanlığı/Defterdarlık personeli, emeklileri ve birinci derece yakınları (eş, anne, baba, çocuk) öncelikli ve en avantajlı tarifeden yararlanır; diğer kamu personeli ve sivil vatandaşlar da kabul edilir, ayrı (daha yüksek) bir tarifeye tabidir.";
+const MALIYE_UCRET = "Kamu personeli / diğer kamu personeli / sivil olmak üzere üç kademeli tarife; ödemeler genelde sadece kredi/banka kartıyla alınır, çoğu tesiste nakit kabul edilmez. Net fiyat için tesis aranmalıdır.";
+const UYGULAMA_OTELI_KIMLER = "Milli Eğitim Bakanlığı'na bağlı turizm/otelcilik meslek liselerinin öğrencileri tarafından eğitim amaçlı işletilir; diğer kamu misafirhanelerinden farklı olarak herkes (sivil vatandaş dahil) standart bir otel müşterisi gibi konaklayabilir, özel bir kamu personeli kısıtlaması yoktur.";
+const UYGULAMA_OTELI_UCRET = "Piyasaya yakın, bölgeye göre değişen otel tarifesi uygulanır; kamu personeli indirimi her okulda standart değildir. Gelirler okulun döner sermaye fonuna aktarılır. Net fiyat için okula doğrudan ulaşılmalıdır.";
+const TARIM_KIMLER = "Tarım ve Orman Bakanlığı personeli, emeklileri ve yakınları öncelikli; diğer kamu personeli ve sivil vatandaşlar da kabul edilir, doluluk durumuna göre değişir.";
+const TARIM_UCRET = "Kamu personeli için indirimli, sivil vatandaşlar için daha yüksek tarife uygulanır; iki ayrı konukevi (eski/yeni bina) olabilir, oda tipine göre fiyat farkı olur. Net fiyat için tesis aranmalıdır.";
+const CEVRESEHIRCILIK_KIMLER = "Çevre, Şehircilik ve İklim Değişikliği Bakanlığı personeli, emeklileri ve yakınları; şehit/gazi yakınları en avantajlı tarifeden yararlanır; diğer kamu personeli kamu tarifesinden, sivil vatandaşlar daha yüksek bir tarifeden yararlanabilir.";
+const CEVRESEHIRCILIK_UCRET = "Kamu personeli / diğer kamu personeli / sivil olmak üzere kademeli tarife; %2 konaklama vergisi ek olarak alınır, 2023 sonrası doğan çocuklardan ücret alınmaz. Net fiyat il müdürlüğünden teyit edilmelidir.";
+const GENCLIKSPOR_KIMLER = "Gençlik ve Spor Bakanlığı personeli öncelikli; diğer kamu personeli ve doluluk durumuna göre sivil vatandaşlar da kabul edilir.";
+const GENCLIKSPOR_UCRET = "Kamu personeli / sivil olmak üzere kademeli tarife; oda tipine göre (tek/çift/aile/suit) fiyat farkı vardır. Net fiyat için tesis aranmalıdır.";
+const SENDIKA_KIMLER = "Sendika üyeleri, emeklileri ve aileleri öncelikli; üye olmayan kamu personeli için kontenjan ve kabul koşulları tesise göre değişir, doğrudan arayıp teyit edin.";
+const SENDIKA_UCRET = "Üye / üye olmayan kamu personeli olmak üzere kademeli tarife uygulanabilir; net fiyat ve üyelik şartı için tesis aranmalıdır.";
 const DIYANET_KIMLER = "Diyanet İşleri Başkanlığı personeli ve aileleri önceliklidir; yer müsaitliğine göre diğer kamu personeli ve sivil vatandaşlar da otel konforunda konaklayabilir.";
 const DIYANET_UCRET = "Personel / kamu personeli / sivil vatandaş olmak üzere kademeli tarife, yılda iki kez (Ocak/Temmuz) güncellenir. Net fiyat için tesis aranmalıdır.";
 const OGM_KIMLER = "Orman Genel Müdürlüğü (Tarım ve Orman Bakanlığı) personeli, emeklileri ve yakınları öncelikli; diğer kamu personeli ve sivil vatandaşlar genelde daha yüksek tarifeyle ve doluluk durumuna göre kabul edilir.";
@@ -602,7 +620,30 @@ const DEMO_DATA = [
   {ad:"Tekirdağ Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Tekirdağ", ilce:"Merkez", adres:"Ertuğrul, Yalı Sk. No:19, 59100 Tekirdağ Merkez/Tekirdağ", lat:40.976272, lng:27.5148331, tel:"+90 282 260 41 01", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"Deniz kenarında, yenilenmiş bir tesis; en az 10 gün önceden rezervasyon önerilir.", sonKontrol:"Haziran 2026 — Google Places"},
   {ad:"Van Orduevi", kurum:"Milli Savunma Bakanlığı", kategori:"Orduevi", il:"Van", ilce:"Merkez", adres:"Şerefiye, Ordu Cd. No:68, 65140 Van Merkez/Van", lat:38.4990824, lng:43.4008303, tel:"", eposta:"", kimler:ORDUEVI_KIMLER, ucret:ORDUEVI_UCRET, aciklama:"Restoranı ve bahçesi (cam kapalı oturma alanı) övgüyle anılıyor; bazı odalarda klima/sineklik bulunmadığı bildiriliyor.", sonKontrol:"Haziran 2026 — Google Places"},
   {ad:"DSİ Giresun Misafirhanesi", kurum:"Devlet Su İşleri Genel Müdürlüğü", kategori:"Misafirhane", il:"Giresun", ilce:"Merkez", adres:"Çıtlakkale, 28200 Giresun Merkez/Giresun", lat:40.9068499, lng:38.3612197, tel:"", eposta:"", kimler:DSI_KIMLER, ucret:DSI_UCRET, aciklama:"Şehir merkezine yakın, çok temiz ve hijyenik olarak övgüyle anılıyor; Karadeniz turlarında uğrak noktası.", sonKontrol:"Haziran 2026 — Google Places"},
-  {ad:"Çanakkale DSİ Misafirhanesi", kurum:"Devlet Su İşleri Genel Müdürlüğü", kategori:"Misafirhane", il:"Çanakkale", ilce:"Merkez", adres:"Barbaros, Aziziye Cd. No:85, 17020 Çanakkale Merkez/Çanakkale", lat:40.1368289, lng:26.4047047, tel:"+90 286 213 91 09", eposta:"", kimler:DSI_KIMLER, ucret:DSI_UCRET, aciklama:"Merkeze çok yakın, otoparklı; yemek hizmeti yok, sade ama temiz bir konaklama sunuyor.", sonKontrol:"Haziran 2026 — Google Places"}
+  {ad:"Çanakkale DSİ Misafirhanesi", kurum:"Devlet Su İşleri Genel Müdürlüğü", kategori:"Misafirhane", il:"Çanakkale", ilce:"Merkez", adres:"Barbaros, Aziziye Cd. No:85, 17020 Çanakkale Merkez/Çanakkale", lat:40.1368289, lng:26.4047047, tel:"+90 286 213 91 09", eposta:"", kimler:DSI_KIMLER, ucret:DSI_UCRET, aciklama:"Merkeze çok yakın, otoparklı; yemek hizmeti yok, sade ama temiz bir konaklama sunuyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Maliye Bakanlığı Erzurum Defterdarlığı Konuk Evi", kurum:"Hazine ve Maliye Bakanlığı", kategori:"Misafirhane", il:"Erzurum", ilce:"Yakutiye", adres:"Gez Mh., 25050 Yakutiye/Erzurum", lat:39.910323999999996, lng:41.2650472, tel:"", eposta:"", kimler:MALIYE_KIMLER, ucret:MALIYE_UCRET, aciklama:"⚠️ Kışın bazı odalarda kalorifer/ısıtma sorunları bildiriliyor, özellikle üst kat/çatı katı odalarında; tuvalet/banyo bazı katlarda paylaşımlı. Fiyat-performans açısından övgü alıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Hazine ve Maliye Bakanlığı Beyazıt Eğitim Tesisi ve Konukevi", kurum:"Hazine ve Maliye Bakanlığı", kategori:"Misafirhane", il:"İstanbul", ilce:"Fatih", adres:"Mimar Kemalettin, Tiyatro Cd. No:12 D:12, 34130 Fatih/İstanbul", lat:41.007892, lng:28.9654212, tel:"+90 212 458 00 14", eposta:"", kimler:MALIYE_KIMLER, ucret:MALIYE_UCRET, aciklama:"Kapalıçarşı karşısında, Sultanahmet/Ayasofya/Süleymaniye'ye yürüme mesafesinde; ayrıca İstanbul Defterdarlığı'na bağlı Büyükada Eğitim Tesisi ve Konukevi'nin rezervasyonları da buradan yapılıyor. Civar yollar gündüz araç trafiğine kapalı olabiliyor, bunu önceden öğrenin.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Elazığ Defterdarlığı Misafirhanesi", kurum:"Hazine ve Maliye Bakanlığı", kategori:"Misafirhane", il:"Elazığ", ilce:"Merkez", adres:"Çaydaçıra, Emsal Sk. No:6, 23100 Elazığ Merkez/Elazığ", lat:38.6735646, lng:39.1783282, tel:"+90 424 502 32 32", eposta:"", kimler:MALIYE_KIMLER, ucret:MALIYE_UCRET, aciklama:"21 Temmuz 2023'te açılmış yeni bir tesis, 27 oda/54 yatak kapasiteli; kahvaltı verilmiyor, bazı yorumlarda temizlik/oda servisi dönemsel olarak eksik bulunmuş.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Adana Defterdarlığı Maliye Misafirhanesi", kurum:"Hazine ve Maliye Bakanlığı", kategori:"Misafirhane", il:"Adana", ilce:"Seyhan", adres:"Kurtuluş, Maliye 2 Lojmanları, 01130 Seyhan/Adana", lat:36.9981716, lng:35.3181951, tel:"+90 322 458 83 70", eposta:"", kimler:MALIYE_KIMLER, ucret:"Mart 2026 itibarıyla paylaşılan fiyat aralığı: 700-900 TL/gece (oda tipine göre). Resmî tarife güncellenebilir, kesin rakam için tesisi arayın.", aciklama:"Maliye Lojmanları binasının 2. katında; günlük/kısa süreli konaklama için pratik, merkezi konum.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"T.C. Ziraat Bankası Erzurum Misafirhanesi", kurum:"Ziraat Bankası", kategori:"Misafirhane", il:"Erzurum", ilce:"Yakutiye", adres:"Yukarı Mumcu, Cami Sk. No:5, 25100 Yakutiye/Erzurum", lat:39.9074091, lng:41.271274999999996, tel:"", eposta:"", kimler:BANKA_KIMLER, ucret:BANKA_UCRET, aciklama:"Palerium AVM'ye yakın, Cumhuriyet Caddesi üzerinde; kısa süreli (1-2 gece) Erzurum ziyaretleri için ekonomik bir seçenek olarak tercih ediliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Ankara Uygulama Oteli (Yenimahalle)", kurum:"Milli Eğitim Bakanlığı (Turizm Meslek Lisesi)", kategori:"Uygulama Oteli", il:"Ankara", ilce:"Yenimahalle", adres:"İvedikköy, Anadolu Blv., 06378 Yenimahalle/Ankara", lat:40.006792499999996, lng:32.7724866, tel:"+90 312 212 43 60", eposta:"", kimler:UYGULAMA_OTELI_KIMLER, ucret:UYGULAMA_OTELI_UCRET, aciklama:"Otelcilik öğrencilerinin işlettiği gerçek bir otel; sendika/kurum toplantıları için de kullanılıyor. ⚠️ Yorumlar arasında büyük tutarsızlık var — bazıları 'ideal' derken bazıları oda bakımıyla ilgili ciddi şikayetler bildiriyor, oda görmeden ödeme yapmayın.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Muradiye Uygulama Oteli", kurum:"Milli Eğitim Bakanlığı (Turizm Meslek Lisesi)", kategori:"Uygulama Oteli", il:"Bursa", ilce:"Osmangazi", adres:"Kocanaip, Dr. Ekrem Paksoy Sk. No:16, 16050 Osmangazi/Bursa", lat:40.188764299999995, lng:29.044223499999994, tel:"+90 224 221 38 25", eposta:"", kimler:UYGULAMA_OTELI_KIMLER, ucret:UYGULAMA_OTELI_UCRET, aciklama:"Türkiye'nin tarihte ilk öğretmenevi olarak 1981'de hizmete başladığı biliniyor; bugün otelcilik öğrencilerinin işlettiği, 764 yorumla 4.1 puanlı, övgüyle anılan bir eğitim oteli. Şehir merkezine yokuş yürüyüş biraz yorucu olabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Çeşme Uygulama Oteli", kurum:"Milli Eğitim Bakanlığı (Turizm Meslek Lisesi)", kategori:"Uygulama Oteli", il:"İzmir", ilce:"Çeşme", adres:"Dalyan, 4202. Sk. No:12, 35930 Çeşme/İzmir", lat:38.352926499999995, lng:26.306679799999998, tel:"+90 506 047 14 01", eposta:"", kimler:UYGULAMA_OTELI_KIMLER, ucret:UYGULAMA_OTELI_UCRET, aciklama:"Havuzlu, Çeşme'nin diğer otellerine göre daha ekonomik; 34 oda/70 yatak kapasiteli, restoranı da var. Bazı odalar yenileme bekliyor, kısa konaklamalar için daha uygun.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Nafiz Yürekli Uygulama Oteli", kurum:"Milli Eğitim Bakanlığı (Turizm Meslek Lisesi)", kategori:"Uygulama Oteli", il:"Isparta", ilce:"Eğirdir", adres:"Altınkum, İstasyon Cd. No:57, 32500 Eğirdir/Isparta", lat:37.8888058, lng:30.817091499999997, tel:"+90 246 311 27 48", eposta:"", kimler:UYGULAMA_OTELI_KIMLER, ucret:UYGULAMA_OTELI_UCRET, aciklama:"Eğirdir Gölü manzaralı, 2024'te kapsamlı yenilemeden geçmiş; 510 yorumla 4.4 puan, 'lüks butik otel sınıfında' ve '5 yıldızlı otelle yarışır' yorumları alıyor. Bölgenin en çarpıcı bulgularından biri.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Adana Meteoroloji Bölge Müdürlüğü Misafirhanesi", kurum:"Meteoroloji Genel Müdürlüğü", kategori:"Misafirhane", il:"Adana", ilce:"Yüreğir", adres:"Yavuzlar, Kışla Cd. No:238, 01220 Yüreğir/Adana", lat:37.0041145, lng:35.343437, tel:"+90 322 321 13 98", eposta:"", kimler:METEOROLOJI_KIMLER, ucret:METEOROLOJI_UCRET, aciklama:"6. Bölge Müdürlüğü kampüsü içinde; bir kullanıcı 2023 depreminden sonra 14 gün ücretsiz barındırıldığını paylaşmış, kurumun sosyal yardımseverliğine dair güzel bir örnek. Okul gruplarına balon fırlatma gösterisi de yapılıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Çukurova Üniversitesi Balcalı Konukevi", kurum:"Çukurova Üniversitesi", kategori:"Misafirhane", il:"Adana", ilce:"Sarıçam", adres:"Gültepe, 01790 Sarıçam/Adana", lat:37.0484293, lng:35.3431262, tel:"", eposta:"", kimler:"Üniversite personeli, akademisyenler, kamu personeli ve aileleri; doluluk durumuna göre sivil misafirler de kabul edilebilir.", ucret:"İki kişilik oda için ~2700 TL/gece bildiriliyor (kahvaltı hariç, tarihsiz kullanıcı paylaşımı — kamu misafirhanesi için yüksek bulunduğu yorumlanmış); net fiyat için tesis aranmalıdır.", aciklama:"Balcalı kampüsü içinde, deniz/sahil manzaralı; kahvaltı hizmetinin reklamına rağmen dönemsel olarak verilmediği, klima/TV gibi donanımlarda dönemsel arıza bildiriliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Adana Zirai Üretim İşletmesi Tarımsal Yayım ve Hizmetiçi Eğitim Merkezi Konukevi", kurum:"Tarım ve Orman Bakanlığı", kategori:"Misafirhane", il:"Adana", ilce:"Yüreğir", adres:"Köprülü, Dr. Mithat Özsan Blv., 01230 Yüreğir/Adana", lat:37.0107612, lng:35.3397132, tel:"+90 322 344 16 44", eposta:"", kimler:TARIM_KIMLER, ucret:TARIM_UCRET, aciklama:"Şehir merkezine biraz uzak ama taksi ile kolay erişim sağlanıyor; eski ve yeni olmak üzere iki ayrı konukevi binası var, yeni bina daha donanımlı. Geniş yeşil bir kampüs içinde, güvenlik mevcut.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Adana TEİAŞ Misafirhanesi", kurum:"TEİAŞ (Türkiye Elektrik İletim A.Ş.)", kategori:"Misafirhane", il:"Adana", ilce:"Çukurova", adres:"Yurt, 71413. Sk. No:5, 01170 Çukurova/Adana", lat:37.0433282, lng:35.2895348, tel:"", eposta:"", kimler:KIT_KIMLER, ucret:KIT_UCRET, aciklama:"Temizlik ve hijyen kitleri (diş bakım seti, tıraş seti vb.) standart olarak sunuluyor; aile geleneği olarak kullanan kullanıcılar var, övgüyle anılıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Adalet Bakanlığı Adana Göltepe Eğitim Tesisleri", kurum:"Adalet Bakanlığı", kategori:"Misafirhane", il:"Adana", ilce:"Çukurova", adres:"Güzelyalı, 81110. Sk. No:5, 01170 Çukurova/Adana", lat:37.0505533, lng:35.3030322, tel:"+90 322 235 06 00", eposta:"", kimler:ADALET_KIMLER, ucret:ADALET_UCRET, aciklama:"Göl/su kenarında geniş bir eğitim tesisi kompleksi; bünyesindeki restoranı (kuzu tandır, pide) sivil ziyaretçiler arasında da oldukça popüler ve yüksek puanlı (2100+ yorum). Konaklama için önceden arayıp teyit edin.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Artvin Çevre, Şehircilik ve İklim Değişikliği İl Müdürlüğü Misafirhanesi", kurum:"Çevre, Şehircilik ve İklim Değişikliği Bakanlığı", kategori:"Misafirhane", il:"Artvin", ilce:"Merkez", adres:"Cami, 08100 Şehitlik/Artvin Merkez/Artvin", lat:41.175108, lng:41.840152, tel:"", eposta:"", kimler:CEVRESEHIRCILIK_KIMLER, ucret:CEVRESEHIRCILIK_UCRET, aciklama:"İl müdürlüğü hizmet binasına bitişik; il müdürlüklerine bağlı bu tür misafirhaneler genelde küçük (5-10 oda) ama ekonomiktir. Rezervasyon için il müdürlüğünü mesai saatlerinde aramanız gerekir.", sonKontrol:"Haziran 2026 — Google Places + csb.gov.tr"},
+  {ad:"Şanlıurfa Çevre, Şehircilik ve İklim Değişikliği İl Müdürlüğü Misafirhanesi", kurum:"Çevre, Şehircilik ve İklim Değişikliği Bakanlığı", kategori:"Misafirhane", il:"Şanlıurfa", ilce:"Karaköprü", adres:"Mehmetçik, Eyyüp Cenap Gülpınar Blv., 63340 Karaköprü/Şanlıurfa", lat:37.2003718, lng:38.7766413, tel:"+90 414 313 17 90", eposta:"", kimler:CEVRESEHIRCILIK_KIMLER, ucret:CEVRESEHIRCILIK_UCRET, aciklama:"Yorumlarda '4 yıldızlı otelle kıyaslanabilir', 'temiz ve konforlu' deniliyor; check-in saat 17:00'den sonra yapılamıyor, ödeme nakit veya havale ile alınıyor. Önceden arayıp rezervasyon yapmak şart.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Gaziantep Çevre, Şehircilik ve İklim Değişikliği İl Müdürlüğü Misafirhanesi", kurum:"Çevre, Şehircilik ve İklim Değişikliği Bakanlığı", kategori:"Misafirhane", il:"Gaziantep", ilce:"Şehitkamil", adres:"Mücahitler, Maraşal Fevzi Çakmak Blv., 27090 Şehitkamil/Gaziantep", lat:37.077974, lng:37.354594, tel:"", eposta:"", kimler:CEVRESEHIRCILIK_KIMLER, ucret:"İl müdürlüğünün resmi duyurusuna göre: 7 oda/18 yatak kapasiteli; kamu personeli kişi başı 750 TL, sivil kişi başı 1.500 TL (oda paylaşımlı). Net güncel fiyat için il müdürlüğü aranmalıdır.", aciklama:"Her odada TV, buzdolabı ve klima var; bazı yorumlarda telefonla ulaşmanın zor olduğu bildiriliyor, ısrarla arayın veya bizzat gidip rezervasyon yapın.", sonKontrol:"Haziran 2026 — Google Places + csb.gov.tr resmi duyuru"},
+  {ad:"Gaziantep İl Tarım ve Orman Müdürlüğü Misafirhanesi", kurum:"Tarım ve Orman Bakanlığı", kategori:"Misafirhane", il:"Gaziantep", ilce:"Şahinbey", adres:"Binevler, Üniversite Blv., 27070 Şahinbey/Gaziantep", lat:37.0569905, lng:37.3428018, tel:"+90 342 335 17 27", eposta:"", kimler:TARIM_KIMLER, ucret:"Kullanıcı paylaşımına göre (Ağustos 2025) 3 kişi toplam ~1.830 TL/gece (kahvaltı hariç).", aciklama:"Yeşillik manzaralı, çok temiz olarak övgüyle anılıyor; odalarda Kur'an, seccade ve kıble göstergesi gibi ince dokunuşlar dikkat çekiyor. Bina eski olduğundan ses yalıtımı zayıf olabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Gençlik ve Spor Bakanlığı Eğitim Tesisleri (Ankara)", kurum:"Gençlik ve Spor Bakanlığı", kategori:"Misafirhane", il:"Ankara", ilce:"Çankaya", adres:"Mustafa Kemal, 2154. Sk. No:30, 06510 Çankaya/Ankara", lat:39.9111649, lng:32.7794858, tel:"+90 312 551 58 00", eposta:"", kimler:GENCLIKSPOR_KIMLER, ucret:GENCLIKSPOR_UCRET, aciklama:"20 tek kişilik, 21 çift kişilik, 10 duble (aile) ve 28 suit oda; sauna ve spor salonu da var. Büyük bir AVM'ye bitişik, otopark sorunu yok. Düğün/davet organizasyonları için de kullanılıyor.", sonKontrol:"Haziran 2026 — Google Places + egitimtesisi.gsb.gov.tr"},
+  {ad:"Ankara Vakıfevi (Vakıflar Genel Müdürlüğü Misafirhanesi)", kurum:"Vakıflar Genel Müdürlüğü", kategori:"Misafirhane", il:"Ankara", ilce:"Çankaya", adres:"Harbiye, Karşıyaka Sk. No:36, 06460 Çankaya/Ankara", lat:39.8924854, lng:32.8401841, tel:"+90 312 480 45 42", eposta:"", kimler:"Kamu personeli, vakıf çalışanları ve yakınları öncelikli; sivil vatandaşlar da doluluk durumuna göre kabul edilir.", ucret:"Kullanıcı paylaşımına göre kişi başı ~985 TL/gece (kahvaltı dahil); su, çay servisi sınırsız sunuluyor. Net fiyat için tesis aranmalıdır.", aciklama:"Ayrancı'ya yakın, Kızılay'a 10-15 dk otobüsle (135/183 hatları); temiz ve sakin olarak övgüyle anılıyor, Ankara standartlarına göre ekonomik bulunuyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Vakıflar Genel Müdürlüğü İstanbul Misafirhanesi", kurum:"Vakıflar Genel Müdürlüğü", kategori:"Misafirhane", il:"İstanbul", ilce:"Beyoğlu", adres:"Gümüşsuyu, Kutlu Sk., 34437 Beyoğlu/İstanbul", lat:41.0348212, lng:28.9873472, tel:"+90 212 251 88 10", eposta:"", kimler:"Kamu personeli, vakıf çalışanları ve yakınları öncelikli; sivil vatandaşlar da doluluk durumuna göre kabul edilir.", ucret:"2025 sonu itibarıyla gecelik ~700 TL bildirilmiş (kullanıcı paylaşımı, kesinlik taşımaz). Net fiyat için tesis aranmalıdır.", aciklama:"⚠️ Kaynaklar arasında çelişki var — bazı listelerde aktif görünürken bir kullanıcı yorumu 'kapalı' diyor; gitmeden mutlaka telefonla teyit edin. Taksim/Gümüşsuyu bölgesinde, merkezi bir konumda.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Yol-İş Sendikası Ankara Kızılay Konukevi", kurum:"Yol-İş Sendikası", kategori:"Misafirhane", il:"Ankara", ilce:"Çankaya", adres:"Kültür, Dr. Mediha Eldem Sk. No:35, 06420 Çankaya/Ankara", lat:39.921048, lng:32.859826, tel:"+90 312 431 44 00", eposta:"", kimler:SENDIKA_KIMLER, ucret:SENDIKA_UCRET, aciklama:"Az bilinen bir buluntu — bir işçi sendikasının kendi konukevi; Kızılay'a yürüme mesafesinde, 425 yorumla 4.4 puan. Temiz, sakin ve fiyat-performansı övgüyle anılıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"TAKAV Sosyal Tesisleri (Ankara)", kurum:"Tapu ve Kadastro Genel Müdürlüğü / TAKAV", kategori:"Misafirhane", il:"Ankara", ilce:"Çankaya", adres:"Bahçelievler, Taşkent Cd. (Eski 1. Cd.) No:56, 06490 Çankaya/Ankara", lat:39.9269565, lng:32.8294209, tel:"+90 312 222 56 67", eposta:"", kimler:TAKAV_KIMLER, ucret:TAKAV_UCRET, aciklama:"714 yorumla 4.1 puan; 'kamu misafirhaneleri arasında en temizi' deniliyor, fiyatı 3 yıldızlı otel seviyesinde. Klima bulunmuyor, yazın sıcak olabilir.", sonKontrol:"Haziran 2026 — Google Places"}
 ];
 
 const KATEGORI_ICON = {
@@ -613,6 +654,7 @@ const KATEGORI_ICON = {
 /* ---------- State ---------- */
 let ALL = [];
 let firestoreDb = null;
+let firebaseAuth = null;
 let isAdmin = false;
 let map = null;
 let markersLayer = null;
@@ -635,6 +677,7 @@ function tryInitFirebase(){
     if(!FIREBASE_CONFIG || !FIREBASE_CONFIG.projectId){ return false; }
     firebase.initializeApp(FIREBASE_CONFIG);
     firestoreDb = firebase.firestore();
+    firebaseAuth = firebase.auth();
     return true;
   }catch(e){
     console.warn("Firebase başlatılamadı, demo moda geçiliyor:", e);
@@ -879,19 +922,55 @@ function refreshCurrentView(){
 document.getElementById("adminToggle").addEventListener("click", ()=>{
   document.getElementById("adminPanel").classList.toggle("hidden");
 });
-document.getElementById("passSubmit").addEventListener("click", ()=>{
-  const val = document.getElementById("adminPass").value;
-  if(val === ADMIN_PASS){
+document.getElementById("passSubmit").addEventListener("click", async ()=>{
+  const email = document.getElementById("adminEmail").value.trim();
+  const pass = document.getElementById("adminPass").value;
+  const msg = document.getElementById("loginMsg");
+  if(!firebaseAuth){
+    msg.textContent = "Firebase bağlı değil — admin girişi sadece Firebase yapılandırıldıktan sonra çalışır.";
+    return;
+  }
+  try{
+    await firebaseAuth.signInWithEmailAndPassword(email, pass);
     isAdmin = true;
     document.getElementById("passRow").classList.add("hidden");
     document.getElementById("adminGrid").style.display = "grid";
-  }else{
-    alert("Şifre yanlış.");
+    document.getElementById("logoutBtn").classList.remove("hidden");
+    msg.textContent = "";
+  }catch(err){
+    console.error(err);
+    msg.textContent = "Giriş başarısız: e-posta veya şifre hatalı.";
   }
 });
 
+document.getElementById("logoutBtn").addEventListener("click", async ()=>{
+  if(firebaseAuth) await firebaseAuth.signOut();
+  isAdmin = false;
+  document.getElementById("passRow").classList.remove("hidden");
+  document.getElementById("adminGrid").style.display = "none";
+  document.getElementById("logoutBtn").classList.add("hidden");
+  document.getElementById("adminEmail").value = "";
+  document.getElementById("adminPass").value = "";
+});
+
+// Sayfa yenilendiğinde oturum açıksa admin panelini otomatik göster
+if(firebaseAuth){
+  firebaseAuth.onAuthStateChanged((user)=>{
+    if(user){
+      isAdmin = true;
+      document.getElementById("passRow").classList.add("hidden");
+      document.getElementById("adminGrid").style.display = "grid";
+      document.getElementById("logoutBtn").classList.remove("hidden");
+    }
+  });
+}
+
 document.getElementById("addForm").addEventListener("submit", async (e)=>{
   e.preventDefault();
+  if(!isAdmin){
+    alert("Önce giriş yapmalısınız.");
+    return;
+  }
   const newTesis = {
     ad: document.getElementById("f_ad").value.trim(),
     kurum: document.getElementById("f_kurum").value.trim(),
