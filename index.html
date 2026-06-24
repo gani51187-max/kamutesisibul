@@ -18,6 +18,40 @@
 <meta name="twitter:description" content="Türkiye'nin 81 ilindeki öğretmenevi, polisevi, orduevi ve misafirhaneleri tek yerden bulun.">
 
 <meta name="theme-color" content="#1B2A4A">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Kamu Tesisi Bul",
+  "url": "https://kamutesisibul.com/",
+  "description": "Türkiye'nin 81 ilindeki öğretmenevi, polisevi, orduevi, misafirhane ve dinlenme tesislerini tek yerden bulun.",
+  "inLanguage": "tr-TR",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": "https://kamutesisibul.com/?q={search_term_string}"
+    },
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Kamu Tesisi Bul",
+  "url": "https://kamutesisibul.com/",
+  "logo": "https://kamutesisibul.com/favicon.svg",
+  "description": "Türkiye'deki kamu kurumlarına ait misafirhane, öğretmenevi, polisevi, orduevi ve sosyal tesisleri listeleyen bağımsız bir rehber.",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "email": "gani51187@gmail.com",
+    "contactType": "customer support"
+  }
+}
+</script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%231B2A4A'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle' fill='%23F2EEE3' font-family='Georgia,serif'%3E%F0%9F%8F%9B%EF%B8%8F%3C/text%3E%3C/svg%3E">
 
 <!--
@@ -68,6 +102,8 @@
   /* ---------- Letterhead ---------- */
   .letterhead{
     background:var(--lacivert);
+    background-image:radial-gradient(circle, rgba(242,238,227,.06) 1px, transparent 1.4px);
+    background-size:13px 13px;
     color:var(--kagit);
     padding:28px 24px 22px;
     display:flex;
@@ -133,6 +169,39 @@
     margin-left:6px; vertical-align:middle;
   }
 
+  /* ---------- Şaşırtan Keşifler ---------- */
+  .kesifler-section{max-width:1080px; margin:26px auto 0; padding:0 16px;}
+  .kesifler-title{font-size:19px; margin-bottom:2px;}
+  .kesifler-sub{font-size:12.5px; color:var(--ink-soft); margin:0 0 12px; font-family:'IBM Plex Mono', monospace;}
+  .kesifler-strip{
+    display:flex; gap:14px; overflow-x:auto; padding-bottom:8px; scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;
+  }
+  .kesif-card{
+    flex:0 0 auto; width:230px; scroll-snap-align:start; cursor:pointer;
+    background:var(--lacivert); color:var(--kagit); padding:16px;
+    border-radius:var(--radius); position:relative; overflow:hidden;
+    transition:transform .15s ease;
+  }
+  .kesif-card:hover{transform:translateY(-3px);}
+  .kesif-card .kesif-emoji{font-size:26px; margin-bottom:8px; display:block;}
+  .kesif-card h4{font-family:'Fraunces', serif; font-size:15.5px; margin:0 0 6px; line-height:1.25;}
+  .kesif-card .kesif-kurum{font-size:11px; color:var(--kraft); margin:0 0 8px; font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:.4px;}
+  .kesif-card p.kesif-blurb{font-size:12.5px; line-height:1.4; margin:0; color:#dfe3ee;}
+  .kesifler-strip::-webkit-scrollbar{height:6px;}
+  .kesifler-strip::-webkit-scrollbar-thumb{background:var(--kraft); border-radius:4px;}
+
+  /* ---------- Kategori lejandı ---------- */
+  .kat-legend{
+    max-width:1080px; margin:14px auto 0; padding:0 16px;
+    display:flex; flex-wrap:wrap; gap:6px 14px; justify-content:center;
+    font-size:11.5px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace;
+  }
+  .kat-legend .kat-dot{
+    display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; vertical-align:middle;
+  }
+  .kat-legend span.kat-item{display:inline-flex; align-items:center; white-space:nowrap;}
+
   /* ---------- Main / grid ---------- */
   main{max-width:1080px; margin:20px auto 60px; padding:0 16px;}
   .grid{
@@ -143,6 +212,38 @@
     border:1px dashed var(--kraft); background:var(--kart);
   }
   .empty-state h3{font-size:18px; margin-bottom:6px; color:var(--ink);}
+
+  /* ---------- Loading state ---------- */
+  .loading-state{
+    grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--ink-soft);
+    font-family:'IBM Plex Mono', monospace; font-size:13px; letter-spacing:.5px;
+  }
+  .loading-seal{
+    display:block; font-size:34px; margin-bottom:14px;
+    animation:loadingPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes loadingPulse{
+    0%,100%{opacity:.35; transform:scale(.94);}
+    50%{opacity:1; transform:scale(1.04);}
+  }
+
+  /* ---------- Ticket card entrance + hover ---------- */
+  .ticket{
+    animation:ticketIn .42s ease-out backwards;
+    transition:transform .16s ease, box-shadow .16s ease;
+  }
+  .ticket:hover{
+    transform:translateY(-3px);
+    box-shadow:0 10px 22px rgba(27,42,74,.14);
+  }
+  @keyframes ticketIn{
+    from{opacity:0; transform:translateY(10px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .ticket{animation:none;}
+    .loading-seal{animation:none;}
+  }
 
   /* ---------- Ticket card ---------- */
   .ticket{
@@ -271,8 +372,16 @@
   </div>
 </section>
 
+<div id="kategoriLejand" class="kat-legend"></div>
+
+<section id="kesiflerSection" class="kesifler-section">
+  <h2 class="kesifler-title">🔍 Şaşırtan Keşifler</h2>
+  <p class="kesifler-sub">Bunların kamu tesisi olduğuna inanmayacaksınız</p>
+  <div id="kesiflerStrip" class="kesifler-strip"></div>
+</section>
+
 <main>
-  <section id="listView" class="grid"></section>
+  <section id="listView" class="grid"><div class="loading-state"><span class="loading-seal">🏛️</span>Tesisler yükleniyor…</div></section>
   <section id="mapView" class="hidden"><div id="map"></div></section>
 </main>
 
@@ -643,13 +752,164 @@ const DEMO_DATA = [
   {ad:"Ankara Vakıfevi (Vakıflar Genel Müdürlüğü Misafirhanesi)", kurum:"Vakıflar Genel Müdürlüğü", kategori:"Misafirhane", il:"Ankara", ilce:"Çankaya", adres:"Harbiye, Karşıyaka Sk. No:36, 06460 Çankaya/Ankara", lat:39.8924854, lng:32.8401841, tel:"+90 312 480 45 42", eposta:"", kimler:"Kamu personeli, vakıf çalışanları ve yakınları öncelikli; sivil vatandaşlar da doluluk durumuna göre kabul edilir.", ucret:"Kullanıcı paylaşımına göre kişi başı ~985 TL/gece (kahvaltı dahil); su, çay servisi sınırsız sunuluyor. Net fiyat için tesis aranmalıdır.", aciklama:"Ayrancı'ya yakın, Kızılay'a 10-15 dk otobüsle (135/183 hatları); temiz ve sakin olarak övgüyle anılıyor, Ankara standartlarına göre ekonomik bulunuyor.", sonKontrol:"Haziran 2026 — Google Places"},
   {ad:"Vakıflar Genel Müdürlüğü İstanbul Misafirhanesi", kurum:"Vakıflar Genel Müdürlüğü", kategori:"Misafirhane", il:"İstanbul", ilce:"Beyoğlu", adres:"Gümüşsuyu, Kutlu Sk., 34437 Beyoğlu/İstanbul", lat:41.0348212, lng:28.9873472, tel:"+90 212 251 88 10", eposta:"", kimler:"Kamu personeli, vakıf çalışanları ve yakınları öncelikli; sivil vatandaşlar da doluluk durumuna göre kabul edilir.", ucret:"2025 sonu itibarıyla gecelik ~700 TL bildirilmiş (kullanıcı paylaşımı, kesinlik taşımaz). Net fiyat için tesis aranmalıdır.", aciklama:"⚠️ Kaynaklar arasında çelişki var — bazı listelerde aktif görünürken bir kullanıcı yorumu 'kapalı' diyor; gitmeden mutlaka telefonla teyit edin. Taksim/Gümüşsuyu bölgesinde, merkezi bir konumda.", sonKontrol:"Haziran 2026 — Google Places"},
   {ad:"Yol-İş Sendikası Ankara Kızılay Konukevi", kurum:"Yol-İş Sendikası", kategori:"Misafirhane", il:"Ankara", ilce:"Çankaya", adres:"Kültür, Dr. Mediha Eldem Sk. No:35, 06420 Çankaya/Ankara", lat:39.921048, lng:32.859826, tel:"+90 312 431 44 00", eposta:"", kimler:SENDIKA_KIMLER, ucret:SENDIKA_UCRET, aciklama:"Az bilinen bir buluntu — bir işçi sendikasının kendi konukevi; Kızılay'a yürüme mesafesinde, 425 yorumla 4.4 puan. Temiz, sakin ve fiyat-performansı övgüyle anılıyor.", sonKontrol:"Haziran 2026 — Google Places"},
-  {ad:"TAKAV Sosyal Tesisleri (Ankara)", kurum:"Tapu ve Kadastro Genel Müdürlüğü / TAKAV", kategori:"Misafirhane", il:"Ankara", ilce:"Çankaya", adres:"Bahçelievler, Taşkent Cd. (Eski 1. Cd.) No:56, 06490 Çankaya/Ankara", lat:39.9269565, lng:32.8294209, tel:"+90 312 222 56 67", eposta:"", kimler:TAKAV_KIMLER, ucret:TAKAV_UCRET, aciklama:"714 yorumla 4.1 puan; 'kamu misafirhaneleri arasında en temizi' deniliyor, fiyatı 3 yıldızlı otel seviyesinde. Klima bulunmuyor, yazın sıcak olabilir.", sonKontrol:"Haziran 2026 — Google Places"}
+  {ad:"TAKAV Sosyal Tesisleri (Ankara)", kurum:"Tapu ve Kadastro Genel Müdürlüğü / TAKAV", kategori:"Misafirhane", il:"Ankara", ilce:"Çankaya", adres:"Bahçelievler, Taşkent Cd. (Eski 1. Cd.) No:56, 06490 Çankaya/Ankara", lat:39.9269565, lng:32.8294209, tel:"+90 312 222 56 67", eposta:"", kimler:TAKAV_KIMLER, ucret:TAKAV_UCRET, aciklama:"714 yorumla 4.1 puan; 'kamu misafirhaneleri arasında en temizi' deniliyor, fiyatı 3 yıldızlı otel seviyesinde. Klima bulunmuyor, yazın sıcak olabilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Tunceli Çevre, Şehircilik ve İklim Değişikliği İl Müdürlüğü Misafirhanesi", kurum:"Çevre, Şehircilik ve İklim Değişikliği Bakanlığı", kategori:"Misafirhane", il:"Tunceli", ilce:"Merkez", adres:"Alibaba Mah., Fevzi Çakmak Cd. No:4, 62000 Tunceli Merkez/Tunceli", lat:39.1083, lng:39.5483, tel:"+90 428 212 10 23", eposta:"", kimler:CEVRESEHIRCILIK_KIMLER, ucret:CEVRESEHIRCILIK_UCRET, aciklama:"Resmi bakanlık tablosuna göre 2 tek kişilik + 5 çift kişilik oda kapasiteli; il müdürlüğü binası içinde, rezervasyon için mesai saatlerinde aranmalı.", sonKontrol:"Haziran 2026 — csb.gov.tr resmi misafirhane tablosu"},
+  {ad:"Erzurum Çevre, Şehircilik ve İklim Değişikliği İl Müdürlüğü Misafirhanesi", kurum:"Çevre, Şehircilik ve İklim Değişikliği Bakanlığı", kategori:"Misafirhane", il:"Erzurum", ilce:"Yakutiye", adres:"Muratpaşa Mah., Merkezi Yönetim Cd. No:1, 25100 Yakutiye/Erzurum", lat:39.9080, lng:41.2730, tel:"+90 442 235 52 01", eposta:"", kimler:CEVRESEHIRCILIK_KIMLER, ucret:CEVRESEHIRCILIK_UCRET, aciklama:"Resmi bakanlık tablosuna göre 10 çift kişilik oda kapasiteli; il müdürlüğü hizmet binası içinde yer alıyor.", sonKontrol:"Haziran 2026 — csb.gov.tr resmi misafirhane tablosu"},
+  {ad:"Giresun Çevre, Şehircilik ve İklim Değişikliği İl Müdürlüğü Misafirhanesi", kurum:"Çevre, Şehircilik ve İklim Değişikliği Bakanlığı", kategori:"Misafirhane", il:"Giresun", ilce:"Merkez", adres:"Nizamiye Mah., Giresun Defterdarlığı Maliye Lojmanları Kat:3 D:8, 28200 Giresun Merkez/Giresun", lat:40.9128, lng:38.3895, tel:"+90 534 828 61 88", eposta:"", kimler:CEVRESEHIRCILIK_KIMLER, ucret:CEVRESEHIRCILIK_UCRET, aciklama:"İlginç bir detay: bu misafirhane, Giresun Defterdarlığı'nın Maliye Lojmanları binası içinde — iki ayrı kurumun konaklama hizmeti aynı binada birleşmiş. 2 tek kişilik + 1 çift kişilik oda.", sonKontrol:"Haziran 2026 — csb.gov.tr resmi misafirhane tablosu"},
+  {ad:"Bolu Çevre, Şehircilik ve İklim Değişikliği İl Müdürlüğü Misafirhanesi", kurum:"Çevre, Şehircilik ve İklim Değişikliği Bakanlığı", kategori:"Misafirhane", il:"Bolu", ilce:"Merkez", adres:"Sağlık Mah., Şehitler Cd. No:54, 14100 Bolu Merkez/Bolu", lat:40.7397, lng:31.6109, tel:"+90 374 270 35 73", eposta:"", kimler:CEVRESEHIRCILIK_KIMLER, ucret:CEVRESEHIRCILIK_UCRET, aciklama:"Türkiye'nin 'aşçılar şehri' olarak bilinen Bolu'da, 3 çift kişilik oda kapasiteli küçük bir il müdürlüğü misafirhanesi.", sonKontrol:"Haziran 2026 — csb.gov.tr resmi misafirhane tablosu"},
+  {ad:"Mardin Çevre, Şehircilik ve İklim Değişikliği İl Müdürlüğü Misafirhanesi", kurum:"Çevre, Şehircilik ve İklim Değişikliği Bakanlığı", kategori:"Misafirhane", il:"Mardin", ilce:"Artuklu", adres:"13 Mart Mah., 46. Cd. 14. Sk. (Emniyet Müdürlüğü karşısı), 47200 Artuklu/Mardin", lat:37.3204, lng:40.7398, tel:"+90 482 212 11 99", eposta:"", kimler:CEVRESEHIRCILIK_KIMLER, ucret:CEVRESEHIRCILIK_UCRET, aciklama:"Resmi tabloya göre 10 üç-kişilik oda kapasiteli, oldukça büyük bir il müdürlüğü misafirhanesi; İl Emniyet Müdürlüğü'nün hemen karşısında.", sonKontrol:"Haziran 2026 — csb.gov.tr resmi misafirhane tablosu"},
+  {ad:"Van Çevre, Şehircilik ve İklim Değişikliği İl Müdürlüğü Misafirhanesi", kurum:"Çevre, Şehircilik ve İklim Değişikliği Bakanlığı", kategori:"Misafirhane", il:"Van", ilce:"Edremit", adres:"Erenkent Mah., 10. Etap Küme Evleri No:20, 65080 Edremit/Van", lat:38.4067, lng:43.3253, tel:"+90 432 216 30 78", eposta:"", kimler:CEVRESEHIRCILIK_KIMLER, ucret:CEVRESEHIRCILIK_UCRET, aciklama:"Van Gölü kıyısındaki Edremit ilçesinde; 8 tek kişilik + 2 çift kişilik oda kapasiteli.", sonKontrol:"Haziran 2026 — csb.gov.tr resmi misafirhane tablosu"},
+  {ad:"Elazığ Çevre, Şehircilik ve İklim Değişikliği İl Müdürlüğü Misafirhanesi", kurum:"Çevre, Şehircilik ve İklim Değişikliği Bakanlığı", kategori:"Misafirhane", il:"Elazığ", ilce:"Merkez", adres:"Sürsürü Mah., Atatürk Blv. No:91, 23100 Elazığ Merkez/Elazığ", lat:38.6789, lng:39.2247, tel:"+90 424 241 11 45", eposta:"", kimler:CEVRESEHIRCILIK_KIMLER, ucret:CEVRESEHIRCILIK_UCRET, aciklama:"1 tek kişilik + 4 çift kişilik oda kapasiteli; il müdürlüğü hizmet binası içinde.", sonKontrol:"Haziran 2026 — csb.gov.tr resmi misafirhane tablosu"},
+  {ad:"Ardahan Üniversitesi Misafirhanesi (Yenisey Konukevi)", kurum:"Ardahan Üniversitesi", kategori:"Misafirhane", il:"Ardahan", ilce:"Merkez", adres:"Merkez, Çamlıçatak Mevkii, Yenisey Kampüsü, 75000 Ardahan Merkez/Ardahan", lat:41.135079, lng:42.7799715, tel:"+90 478 211 75 55", eposta:"", kimler:"Üniversite personeli, akademisyenler ve kamu personeli öncelikli; sivil misafirler de doluluk durumuna göre kabul edilebilir.", ucret:"Kullanıcı paylaşımına göre kamu personeli indirimiyle iki kişi ~1.600 TL/gece (kahvaltı dahil).", aciklama:"341 yorumla 4.5 puan; oda büyüklüğü ve kahvaltı çeşitliliği övgüyle anılıyor, bazı dönemlerde temizlik şikayetleri bildirilmiş.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kafkas Arısı Üretim, Eğitim ve Gen Merkezi Misafirhanesi", kurum:"Tarım ve Orman Bakanlığı", kategori:"Misafirhane", il:"Ardahan", ilce:"Merkez", adres:"Halilefendi, D010 Üzeri (Artvin-Şavşat yolu), 75000 Ardahan Merkez/Ardahan", lat:41.1232317, lng:42.6892461, tel:"+90 478 211 31 71", eposta:"", kimler:TARIM_KIMLER, ucret:TARIM_UCRET, aciklama:"Bölgenin en 'kim bilirdi' türü buluntularından biri: Kafkas arı ırkının üretildiği bir araştırma istasyonu — sanal gerçeklikli arı deneyimi ve geniş bir arıcılık müzesi var. Misafirhanesi sade ama ekonomik; eğitim dönemlerinde öğle yemeği verilmediği bildiriliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Gümüşhane Üniversitesi Misafirhanesi", kurum:"Gümüşhane Üniversitesi", kategori:"Misafirhane", il:"Gümüşhane", ilce:"Merkez", adres:"Bağlarbaşı Mah., Üniversite Kampüsü, 29000 Gümüşhane Merkez/Gümüşhane", lat:40.4364306, lng:39.5172214, tel:"", eposta:"", kimler:"Üniversite personeli, akademisyenler ve kamu personeli öncelikli; sivil misafirler de doluluk durumuna göre kabul edilir.", ucret:"Kullanıcı paylaşımına göre kamu personeli ~650 TL, sivil ~1.000 TL kişi başı/gece; kahvaltı ~100 TL ek ücretli, hafta sonları kahvaltı verilmiyor.", aciklama:"Dağ manzaralı, aile odaları geniş; pencere havalandırması ve hafta sonu kahvaltı eksikliği yorumlarda en sık eleştirilen konular.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Iğdır Üniversitesi Turizm Uygulama Oteli", kurum:"Iğdır Üniversitesi", kategori:"Uygulama Oteli", il:"Iğdır", ilce:"Merkez", adres:"Emek, Evren Paşa Cd. No:79, 76000 Iğdır Merkez/Iğdır", lat:39.9218269, lng:44.036595, tel:"+90 476 223 00 38", eposta:"", kimler:UYGULAMA_OTELI_KIMLER, ucret:"Mayıs 2026 itibarıyla kişi başı ~1.400 TL bildirilmiş (kullanıcı paylaşımı); kahvaltı dahil.", aciklama:"171 yorumla 3.8 puan; kahvaltı büfesi 'dünyanın en iyi otellerinden biriyle kıyaslanabilir' deniliyor. Bazı odalarda elektrik/aydınlatma arızası bildirilmiş, check-in'de odayı kontrol edin.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Tokat Gaziosmanpaşa Üniversitesi Konukevi", kurum:"Tokat Gaziosmanpaşa Üniversitesi", kategori:"Misafirhane", il:"Tokat", ilce:"Merkez", adres:"Taşlıçiftlik Kampüsü, 60000 Taşlıçiftlik/Tokat Merkez/Tokat", lat:40.3296628, lng:36.4837718, tel:"+90 356 252 16 16", eposta:"", kimler:"Sadece kamu personeli kabul edilir (sivil vatandaş konaklayamaz); öncelik üniversite personeline aittir.", ucret:"Fiyat bilgisi yorumlar arasında çok değişken (150-700 TL/kişi aralığında bildirilmiş); net ve güncel fiyat için üniversiteyi arayın.", aciklama:"Kampüs içinde sakin bir konumda, 4.6 puanla övgüyle anılıyor; aracı olmadan ulaşım biraz zor, gece yemeği ve geç saatte kahvaltı verilmiyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Yalova PTT Misafirhanesi", kurum:"PTT (Posta ve Telgraf Teşkilatı)", kategori:"Misafirhane", il:"Yalova", ilce:"Merkez", adres:"Rüstem Paşa Mah., Gazi Paşa Cd. No:36, 77200 Yalova Merkez/Yalova", lat:40.6579027, lng:29.2672076, tel:"", eposta:"", kimler:KIT_KIMLER, ucret:KIT_UCRET, aciklama:"Başmüdürlük binasının 2. katında; merkezi ve ekonomik ama ⚠️ yorumlarda temizlik/hijyen şikayetleri sık bildiriliyor, hafta sonu giriş yapılamadığı da belirtilmiş — gitmeden mutlaka arayın.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Harb-İş Sendikası Dinlenme Tesisleri", kurum:"Harb-İş Sendikası", kategori:"Dinlenme Tesisi / Kamp", il:"Yalova", ilce:"Çınarcık", adres:"Hürriyet, Çınarcık Yolu, 77340 Koruköy/Çınarcık/Yalova", lat:40.6545214, lng:29.19262, tel:"+90 226 249 55 55", eposta:"", kimler:SENDIKA_KIMLER, ucret:SENDIKA_UCRET, aciklama:"791 yorumla 4.1 puan — kendi plajı olan bir sendika tatil tesisi; Yol-İş'in Ankara'daki konukevi gibi, az bilinen ama gerçek bir 'işçi sendikası tatil köyü' örneği. Yalova merkeze 15 dakika.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Çankırı Karatekin Üniversitesi Misafirhanesi", kurum:"Çankırı Karatekin Üniversitesi", kategori:"Misafirhane", il:"Çankırı", ilce:"Merkez", adres:"Yeni Mah., Bademlik Sk. No:11, 18200 Çankırı Merkez/Çankırı", lat:40.5957199, lng:33.6083886, tel:"+90 376 212 88 46", eposta:"", kimler:"Üniversite personeli ve kamu personeli öncelikli; sivil misafirler de doluluk durumuna göre kabul edilebilir.", ucret:"Mayıs 2025 itibarıyla çift kişilik oda kamu personeline ~1.000 TL/gece bildirilmiş (kahvaltı hariç).", aciklama:"Eski bir öğrenci yurdundan dönüştürülmüş; asansör yok, sıcak su bazen yetersiz kalabiliyor. Sakin ve ekonomik bir seçenek olarak değerlendiriliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Fethiye Polisevi (Ovacık/Ölüdeniz)", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"Muğla", ilce:"Fethiye", adres:"Ovacık Mah., Ovacık Cd. No:6, 48300 Fethiye/Muğla", lat:36.5854328, lng:29.1570189, tel:"+90 252 616 65 35", eposta:"", kimler:POLISEVI_KIMLER, ucret:"Kullanıcı paylaşımına göre iki kişi kahvaltı dahil ~2.400 TL/gece; kebap/Adana gibi ana yemekler ~320 TL.", aciklama:"Ölüdeniz'e yürüme mesafesinde, sahile yakın, 1.135 yorumla 4.1 puan — bölgenin en popüler bulgularından biri. Restoranı sınırlı, kahvaltı büfe değil tabak usulü; bazı yorumlarda fiyatların yüksekliği eleştiriliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Fethiye DSİ AR-GE ve Eğitim Merkezi Şefliği Misafirhanesi", kurum:"Devlet Su İşleri Genel Müdürlüğü", kategori:"Misafirhane", il:"Muğla", ilce:"Fethiye", adres:"Tuzla, Cahit Gündüz Cd. No:3, 48300 Fethiye/Muğla", lat:36.6255375, lng:29.1165549, tel:"+90 252 614 37 84", eposta:"", kimler:DSI_KIMLER, ucret:"Kullanıcı paylaşımına göre kamu personeli ~760 TL/gece, kahvaltı ~200 TL ek; dışarıdan büfe kahvaltı +100 TL'ye mümkün.", aciklama:"Fethiye sahilinin tam kavşağında, restoranı dışarıdan müşteri de kabul ediyor; '5 yıldızlı otel konforu, deniz kenarında' yorumları alıyor. Yemek/kahvaltı konaklamaya dahil değil.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Marmaris Uygulama Oteli (Turizm Meslek Yüksekokulu)", kurum:"Milli Eğitim Bakanlığı (Turizm Meslek Lisesi)", kategori:"Uygulama Oteli", il:"Muğla", ilce:"Marmaris", adres:"Gölenye, İçmeler, 48720 Marmaris/Muğla", lat:36.7900318, lng:28.220428, tel:"+90 551 505 48 00", eposta:"", kimler:UYGULAMA_OTELI_KIMLER, ucret:UYGULAMA_OTELI_UCRET, aciklama:"İçmeler'de orman kenarında, havuzlu (çocuk + yetişkin bölümü ayrı); deniz manzaralı odaları var. İki blok mevcut, biri yenilenmiş biri eski — yenilenmiş bloğu tercih edin. Araçla gitmek öneriliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Marmaris Karayolları 26. Şube Müdürlüğü Bakımevi", kurum:"Karayolları Genel Müdürlüğü", kategori:"Misafirhane", il:"Muğla", ilce:"Marmaris", adres:"Çamdibi, Ulusal Egemenlik Cd. No:85, 48700 Marmaris/Muğla", lat:36.8651290, lng:28.2738089, tel:"", eposta:"", kimler:KARAYOLLARI_KIMLER, ucret:"Kullanıcı paylaşımına göre kamu personeli kişi başı ~490 TL/gece (kahvaltı hariç).", aciklama:"Marmaris merkeze yakın, temiz ve yeni eşyalı; otel standardında değil ama 2 günlük konaklamalar için pratik. Bazı dönemlerde duş jeli/terlik gibi detaylar eksik olabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bodrum Orman İşletme Şefliği Misafirhanesi", kurum:"Orman Genel Müdürlüğü", kategori:"Misafirhane", il:"Muğla", ilce:"Bodrum", adres:"Çarşı, Cumhuriyet Cd. No:48, 48400 Bodrum/Muğla", lat:37.033234, lng:27.4319846, tel:"+90 252 316 10 19", eposta:"", kimler:OGM_KIMLER, ucret:"Kullanıcı paylaşımına göre ~1.400 TL/gece — Bodrum standartlarına göre fiyat/performans açısından övgüyle anılıyor.", aciklama:"Bodrum çarşı merkezinde, plaja ve her şeye yürüme mesafesinde; lüks değil ama tertemiz olarak tarif ediliyor. Bodrum'da kamu personeli için en avantajlı seçeneklerden biri.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bodrum Turgut Reis Uygulama Oteli", kurum:"Milli Eğitim Bakanlığı (Turizm Meslek Lisesi)", kategori:"Uygulama Oteli", il:"Muğla", ilce:"Bodrum", adres:"Karabağ, Turgutreis, 48400 Bodrum/Muğla", lat:37.0036516, lng:27.2720205, tel:"+90 252 382 88 66", eposta:"", kimler:UYGULAMA_OTELI_KIMLER, ucret:UYGULAMA_OTELI_UCRET, aciklama:"Turgutreis'te, adalar manzaralı; balkon bulunmayan odaları ve bazı eskimiş donanımları yorumlarda eleştiriliyor, fiyat/konum tercihiyle seçilen bir tesis.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Bodrum Orduevi ve Özel Eğitim Merkezi", kurum:"Milli Savunma Bakanlığı (Deniz Kuvvetleri)", kategori:"Orduevi", il:"Muğla", ilce:"Bodrum", adres:"Eskiçeşme, Büyük İskender Cd. No:1, 48400 Bodrum/Muğla", lat:37.0321249, lng:27.4189497, tel:"+90 252 313 02 48", eposta:"", kimler:ORDUEVI_KIMLER, ucret:ORDUEVI_UCRET, aciklama:"621 yorumla 4.5 puan — Bodrum'un en güzel manzaralı noktalarından birinde, deniz kenarında düzenli ve disiplinli bir tesis. Bölgenin en yüksek puanlı kamu tesislerinden biri.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Muğla İl Jandarma Komutanlığı Sosyal Tesisleri", kurum:"Jandarma Genel Komutanlığı", kategori:"Misafirhane", il:"Muğla", ilce:"Menteşe", adres:"Orhaniye, Birlik Sk., 48000 Muğla Merkez/Muğla", lat:37.2077982, lng:28.3750157, tel:"+90 252 212 85 90", eposta:"", kimler:JANDARMA_KIMLER, ucret:JANDARMA_UCRET, aciklama:"⚠️ Bir kullanıcı yorumunda kamu personelinin askeri/emekli kimlik kartı olmadan konaklayamadığı bildiriliyor — diğer kaynaklarda 'sivil kamu personeli de kalabilir' denmesine rağmen, gitmeden mutlaka arayıp kimlik şartını netleştirin.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Çeşme Polisevi", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"İzmir", ilce:"Çeşme", adres:"İsmet İnönü Mah., 2122. Sk., 35930 Çeşme/İzmir", lat:38.3208035, lng:26.3105178, tel:"+90 232 446 46 80", eposta:"", kimler:POLISEVI_KIMLER, ucret:"Ağustos 2025 itibarıyla kamu personeli yakını için 2 yetişkin + 1 çocuk ~1.671 TL/gece (kahvaltı ve havuz dahil) bildirilmiş.", aciklama:"420 yorumla 3.9 puan; havuzu var, merkeze ~12-13 dk yürüme mesafesinde. Çeşme'nin gece su kesintilerinden etkilenmediği belirtiliyor — yaz aylarında değerli bir avantaj.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Alaçatı Öğretmenevi ve Akşam Sanat Okulu", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"İzmir", ilce:"Çeşme", adres:"Alaçatı, 6021. Sk. No:2, 35930 Çeşme/İzmir", lat:38.29278, lng:26.3773563, tel:"+90 232 723 21 01", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"932 yorumla 4.0 puan — Türkiye'nin en trend tatil beldelerinden Alaçatı'da bir öğretmenevi olması başlı başına şaşırtıcı bir bulgu. Bazı odalar yenileme bekliyor, kahvaltı sınırlı bulunmuş; yine de fiyat/konum dengesiyle yüksek talep görüyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Urla Polisevi (Polis Eğitim ve Dinlenme Tesisleri)", kurum:"Emniyet Genel Müdürlüğü", kategori:"Polisevi", il:"İzmir", ilce:"Urla", adres:"Denizli Mah., Yalı Cd. No:4, 35430 Urla/İzmir", lat:38.378498, lng:26.761828, tel:"", eposta:"", kimler:POLISEVI_KIMLER, ucret:POLISEVI_UCRET, aciklama:"1.699 yorumla 4.1 puan — bölgenin en yüksek etkileşimli bulgularından biri. Çeşmealtı'nın eski mahallesinde, plaja sıfır; ⚠️ sadece kamu personeli ve aileleri kabul ediliyor, dışarıdan ziyaretçi/turist alınmıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Güzelçamlı Jandarma Kampı", kurum:"Jandarma Genel Komutanlığı", kategori:"Dinlenme Tesisi / Kamp", il:"Aydın", ilce:"Kuşadası", adres:"Güzelçamlı, Kamp Sk. No:1, 09100 Kuşadası/Aydın", lat:37.7148547, lng:27.2165944, tel:"+90 256 646 11 45", eposta:"", kimler:JANDARMA_KIMLER, ucret:JANDARMA_UCRET, aciklama:"186 yorumla 4.2 puan; küçük ama bakımlı bir askeri kamp, yemek hizmeti dahil. Hafta sonları kalabalık olabiliyor, bazı yorumlarda ortak alan temizliğiyle ilgili şikayetler var.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Yenifoça Öğretmenevi", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"İzmir", ilce:"Foça", adres:"Mustafa Kemal Atatürk Mah., Eriş Sk. No:2, 35680 Foça/İzmir", lat:38.747325, lng:26.852151, tel:"+90 232 814 57 72", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"484 yorumla 3.6 puan — denize neredeyse sıfır, restoranı ve bazı odaları deniz manzaralı. Plaj kayalık, hizmetiçi eğitim merkezi olarak da kullanılıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Alanya Öğretmenevi ve Akşam Sanat Okulu", kurum:"Milli Eğitim Bakanlığı", kategori:"Öğretmenevi", il:"Antalya", ilce:"Alanya", adres:"Kızlar Pınarı, Atatürk Blv. No:200, 07400 Alanya/Antalya", lat:36.5522222, lng:31.9761111, tel:"+90 242 513 01 47", eposta:"", kimler:OGRETMENEVI_KIMLER, ucret:OGRETMENEVI_UCRET, aciklama:"2.392 yorumla 4.1 puan — bölgenin en yüksek etkileşimli bulgularından biri! Ünlü Kleopatra Plajı'na komşu, kendi plajı/şezlongları var. Sivil ziyaretçilere de açık olarak değerlendiriliyor, aile dostu bir atmosfer sunuyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Alanya Meteoroloji Müdürlüğü ve Uluslararası Eğitim Tesisleri", kurum:"Meteoroloji Genel Müdürlüğü", kategori:"Misafirhane", il:"Antalya", ilce:"Alanya", adres:"Kızlar Pınarı, Meteoroloji Sk. No:3, 07400 Alanya/Antalya", lat:36.55045, lng:31.9802482, tel:"+90 242 513 44 14", eposta:"", kimler:METEOROLOJI_KIMLER, ucret:METEOROLOJI_UCRET, aciklama:"Kleopatra Plajı manzaralı; kahvaltı ve akşam yemeği fiyata dahil (açık büfe). 2023 depreminden sonra bir süre afetzedelere ayrıldığı, sonrasında tekrar normal hizmete döndüğü bildiriliyor. Banyo/duş alanları küçük olabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Akdeniz Üniversitesi Avrupa Akdeniz Gençlik Eğitim ve Dinlenme Tesisi", kurum:"Akdeniz Üniversitesi", kategori:"Dinlenme Tesisi / Kamp", il:"Antalya", ilce:"Kumluca", adres:"Adrasan, Deniz Cd. No:307, 07350 Kumluca/Antalya", lat:36.3042678, lng:30.4593009, tel:"+90 242 883 13 30", eposta:"", kimler:"Üniversite personeli, öğrencileri ve kamu personeli öncelikli; sivil misafirler de doluluk durumuna göre kabul edilebilir.", ucret:"Piyasaya göre ekonomik bir tarife uygulanır; net fiyat için tesis aranmalıdır.", aciklama:"586 yorumla 4.4 puan — 'Adrasan: yeryüzü cenneti' yorumları aldığı, Türkiye'nin en gözde koylarından birinde bir üniversite tesisi. Konferans/etkinlik için de kullanılıyor; havlu sadece oda içinde kullanılabiliyor, böcek/sinek sorunu bildirilmiş.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Konyaaltı Uygulama Oteli", kurum:"Milli Eğitim Bakanlığı (Turizm Meslek Lisesi)", kategori:"Uygulama Oteli", il:"Antalya", ilce:"Konyaaltı", adres:"Gürsu Mah., 07070 Konyaaltı/Antalya", lat:36.863585, lng:30.633228, tel:"+90 242 229 80 65", eposta:"", kimler:UYGULAMA_OTELI_KIMLER, ucret:"Kullanıcı paylaşımına göre çift kişilik oda kahvaltı dahil ~1.500 TL/gece.", aciklama:"Konyaaltı plajına 5 dakika yürüme mesafesinde; otelcilik öğrencilerinin profesyonel hizmeti övgüyle anılıyor. Bina ve elektrik tesisatı eski, bazı prizler çalışmıyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Kaş Orman İşletme Müdürlüğü Misafirhanesi", kurum:"Orman Genel Müdürlüğü", kategori:"Misafirhane", il:"Antalya", ilce:"Kaş", adres:"Andifli, 07580 Kaş/Antalya", lat:36.195164, lng:29.6469132, tel:"+90 242 836 10 26", eposta:"", kimler:OGM_KIMLER, ucret:OGM_UCRET, aciklama:"⚠️ Yorumlar arasında büyük tutarsızlık var — bazıları 'yenilenmiş, manzara muhteşem' derken bazıları 'bakımsız, böcek istilası' bildiriyor; gitmeden güncel durumu telefonla teyit edin. Kaş merkeze yürüme mesafesinde, kendi plajı var; yemek hizmeti yok.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Mardin Artuklu Üniversitesi Uygulama Oteli ve Sosyal Tesisi", kurum:"Mardin Artuklu Üniversitesi", kategori:"Uygulama Oteli", il:"Mardin", ilce:"Artuklu", adres:"Medrese Mah., Diyarbakır Yolu, 47100 Artuklu/Mardin", lat:37.3143448, lng:40.7432384, tel:"+90 482 213 40 02", eposta:"", kimler:"Kamu personeli ve sivil vatandaşlar birlikte konaklayabilir; öncelik yoktur.", ucret:"Net fiyat için tesis aranmalıdır; girişte fotoğraf çekmek isteyenlerden 10 TL ücret alınabildiği bildiriliyor.", aciklama:"Eski Artuklu dönemi mimarisiyle tarihi bir konak; 137 yorumla 4.0 puan, eski Mardin'in taş evlerine tepeden bakan muhteşem bir terası var. ⚠️ Yorumlar arasında büyük fark var — bazıları 'mükemmel' derken bazıları temizlik/bakım sorunları bildiriyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Mardin Orduevi", kurum:"Milli Savunma Bakanlığı", kategori:"Orduevi", il:"Mardin", ilce:"Merkez", adres:"Savurkapı, 47100 Mardin Merkez/Mardin", lat:37.3064093, lng:40.7575138, tel:"+90 482 212 77 14", eposta:"", kimler:ORDUEVI_KIMLER, ucret:ORDUEVI_UCRET, aciklama:"299 yorumla 4.0 puan; terastan eski Mardin'in taş evlerinin ve gece ışıklarının manzarası 'lüks otellerde bile bulunmaz' deniliyor. Kapasite sınırlı olduğundan yemek çeşidi azalabiliyor.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"GAP Uluslararası Tarımsal Araştırma ve Eğitim Merkezi Konukevi", kurum:"Tarım ve Orman Bakanlığı", kategori:"Misafirhane", il:"Diyarbakır", ilce:"Sur", adres:"Fetih Mah., Silvan Yolu 9. Km, 21280 Sur/Diyarbakır", lat:37.9421986, lng:40.256814, tel:"+90 412 326 13 40", eposta:"", kimler:TARIM_KIMLER, ucret:TARIM_UCRET, aciklama:"GAP (Güneydoğu Anadolu Projesi) kapsamında kurulmuş uluslararası bir tarımsal araştırma merkezinin konukevi — şehir merkezinin gürültüsünden uzak, doğa içinde sakin bir konum. Bazı odalarda TV/mini buzdolabı çalışmıyor olabilir, girişte kontrol edin.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Dicle Üniversitesi Konukevi", kurum:"Dicle Üniversitesi", kategori:"Misafirhane", il:"Diyarbakır", ilce:"Sur", adres:"Fetih Mah., Dicle Üniversitesi Yerleşkesi, 21280 Sur/Diyarbakır", lat:37.9193379, lng:40.2730802, tel:"", eposta:"", kimler:"Üniversite personeli ve kamu personeli öncelikli; sivil misafirler de doluluk durumuna göre kabul edilebilir.", ucret:"Net fiyat için tesis aranmalıdır.", aciklama:"Kampüste 1 ve 2 numaralı olmak üzere iki ayrı konukevi binası var; ⚠️ bir yorumda özel ihtiyaçlı bir çocuğu olan ailenin asansörsüz binada 5. kata yerleştirildiği bildiriliyor — özel ihtiyaçlarınız varsa rezervasyon sırasında açıkça belirtin.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Gaziantep Üniversitesi Turizm Uygulama Oteli", kurum:"Gaziantep Üniversitesi", kategori:"Uygulama Oteli", il:"Gaziantep", ilce:"Şahinbey", adres:"Çamtepe, Mahmut Tevfik Atay Blv. No:8, 27000 Şahinbey/Gaziantep", lat:37.0254768, lng:37.2931467, tel:"+90 342 360 90 45", eposta:"", kimler:UYGULAMA_OTELI_KIMLER, ucret:UYGULAMA_OTELI_UCRET, aciklama:"2.467 yorumla 4.1 puan — bölgenin en yüksek etkileşimli bulgularından. Orman kenarında, hayvanat bahçesi girişi yakınında; şehir merkezine ~11 km, kendi aracınızla gitmeniz önerilir.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Ceylanpınar TİGEM Misafirhanesi", kurum:"Tarım İşletmeleri Genel Müdürlüğü (TİGEM)", kategori:"Misafirhane", il:"Şanlıurfa", ilce:"Ceylanpınar", adres:"Bahçelievler Mah., 63570 Ceylanpınar/Şanlıurfa", lat:36.8486441, lng:40.0278653, tel:"+90 414 471 49 74", eposta:"", kimler:TARIM_KIMLER, ucret:TARIM_UCRET, aciklama:"Sitenin uzun süredir aradığı bir kurum: Türkiye'nin en büyük tarım işletmesi alanında, kendi ceylan ve devekuşu popülasyonu olan, tarihi tarım makineleri sergilenen bir kompleks içinde. ⚠️ Ziyaretçi/misafir kabulü idarenin keyfine bağlı olabiliyor, gitmeden mutlaka arayıp teyit edin.", sonKontrol:"Haziran 2026 — Google Places"},
+  {ad:"Halfeti İncisu Sosyal Tesisleri", kurum:"Şanlıurfa Büyükşehir Belediyesi", kategori:"Dinlenme Tesisi / Kamp", il:"Şanlıurfa", ilce:"Halfeti", adres:"Gürlüce, 63950 Halfeti/Şanlıurfa", lat:37.2479133, lng:37.8644603, tel:"", eposta:"", kimler:"Tüm vatandaşlar konaklayabilir, kamu personeli önceliği yoktur.", ucret:"Kullanıcı paylaşımına göre kişi başı ~1.000-2.000 TL/gece (kahvaltı bazen dahil); civar butik otellerin (~3.500 TL) yarısı fiyatına öneriliyor.", aciklama:"Halfeti'nin ünlü 'batık şehir' manzarasına hakim bir tepede; ⚠️ araçla çıkılamıyor, tahta köprüden yürüyerek ve dik bir yokuştan (~500m) ulaşılıyor — bagaj/çocuklu aileler için zorlayıcı. Yorumlarda temizlik/bakım konusunda ciddi tutarsızlıklar var, gitmeden güncel durumu sorun.", sonKontrol:"Haziran 2026 — Google Places"}
 ];
 
 const KATEGORI_ICON = {
   "Misafirhane":"🛌","Dinlenme Tesisi / Kamp":"🏖️","Öğretmenevi":"🎓",
-  "Polisevi":"🚓","Orduevi":"⚔️","Düğün Salonu":"💍","Spor Tesisi":"🏋️","Diğer":"🏛️"
+  "Polisevi":"🚓","Orduevi":"⚔️","Düğün Salonu":"💍","Spor Tesisi":"🏋️",
+  "Uygulama Oteli":"🎩","Diğer":"🏛️"
 };
+// Her kategori kendi "mühür mürekkebi" rengini taşır — Türkiye'deki resmi
+// kurum mühürlerinin kuruma göre farklı renklerde olması fikrinden esinlenildi.
+const KATEGORI_RENK = {
+  "Misafirhane":"#1B2A4A",
+  "Öğretmenevi":"#6E4B7A",
+  "Polisevi":"#2C5F8A",
+  "Orduevi":"#5C6B3D",
+  "Düğün Salonu":"#B33B2E",
+  "Spor Tesisi":"#C9622A",
+  "Uygulama Oteli":"#9C7A2E",
+  "Dinlenme Tesisi / Kamp":"#2E6F71",
+  "Diğer":"#5b574c"
+};
+
+// Her ilin öne çıkan 1-2 yöresel lezzeti — tesis detayında "Bölgede Ne Yenir?" notu için.
+const YORESEL_YEMEK = {
+  "Adana":"Adana kebabı, şalgam suyu eşliğinde; ardından Adana usulü künefe.",
+  "Adıyaman":"Çiriş ve Adıyaman çöreği; bölgenin kendine has künefesi.",
+  "Afyonkarahisar":"Afyon sucuğu ve kaymaklı lokum; ekmek kadayıfı.",
+  "Ağrı":"Çeçil peyniri ve otlu peynir; kavurma.",
+  "Amasya":"Amasya elması ve Amasya pidesi.",
+  "Ankara":"Ankara tava ve kavurma; etliekmek.",
+  "Antalya":"Hibeş, piyaz ve Antalya tava şıllığı.",
+  "Artvin":"Muhlama (kuymak) ve Şavşat balı.",
+  "Aydın":"Taze incir ve Aydın kebabı.",
+  "Balıkesir":"Balıkesir mantısı ve zeytinyağlı yemekler.",
+  "Bilecik":"Söğüt köftesi ve bölgenin meşhur üzümü.",
+  "Bingöl":"Bingöl tava ve kavurma.",
+  "Bitlis":"Perde pilavı ve kalbur dolması.",
+  "Bolu":"Türkiye'nin aşçılar şehri — çullama ve Mengen pilavı.",
+  "Burdur":"Burdur şiş köfte ve Burdur peyniri.",
+  "Bursa":"İskender kebap ve kestane şekeri.",
+  "Çanakkale":"Çanakkale peynir tatlısı ve zeytinyağlı enginar.",
+  "Çankırı":"Yoğurtlu çorba ve Çankırı tuzuyla hazırlanan yöresel yemekler.",
+  "Çorum":"Çorum leblebisi ve mantı.",
+  "Denizli":"Denizli kebabı (şiş) ve horoz şekerlemesi.",
+  "Diyarbakır":"Kaburga dolması, künefe ve çiğ köfte.",
+  "Edirne":"Edirne tava ciğeri ve badem ezmesi.",
+  "Elazığ":"Elazığ kömesi (tatlı) ve harput köftesi.",
+  "Erzincan":"Erzincan tulum peyniri ve çağ kebabı.",
+  "Erzurum":"Cağ kebabı, kadayıf dolması ve ayran aşı.",
+  "Eskişehir":"Çiböreği ve haşhaşlı çörek.",
+  "Gaziantep":"Baklava ve kebabın başkenti; beyran çorbası, künefe.",
+  "Giresun":"Karadeniz pidesi ve taze fındık.",
+  "Gümüşhane":"Pestil ve köme.",
+  "Hakkari":"Pelte ve otlu yöresel yemekler (herle).",
+  "Hatay":"Künefe, humus, oruk ve çeşit çeşit kebap.",
+  "Isparta":"Gül reçeli ve gül şerbeti.",
+  "Mersin":"Mersin tantunisi ve şiş köfte.",
+  "İstanbul":"Balık ekmek; Boğaz manzaralı lokantalarda her tür lezzet.",
+  "İzmir":"Boyoz, kumru ve İzmir köfte.",
+  "Kars":"Kars kaşarı, bal ve kaz kavurması.",
+  "Kastamonu":"Kastamonu pastırması ve höşmerim.",
+  "Kayseri":"Mantı, pastırma ve sucuk.",
+  "Kırklareli":"Pirinçli sarma ve kaymak.",
+  "Kırşehir":"Kırşehir çorbası ve kuru fasulye.",
+  "Kocaeli":"Karadeniz pidesi ve sahilde midye dolma.",
+  "Konya":"Etli ekmek, fırın kebabı ve bamya çorbası.",
+  "Kütahya":"Künefe; çiniyle özdeşleşmiş zengin kahvaltı sofraları.",
+  "Malatya":"Kayısı ve kuru kayısı tatlıları.",
+  "Manisa":"Manisa mesir macunu ve kebap.",
+  "Kahramanmaraş":"Maraş dondurması ve tarhana çorbası.",
+  "Mardin":"İkbebet (kaburga dolması) ve kibe.",
+  "Muğla":"Bodrum mantarı ve zeytinyağlı yemekler.",
+  "Muş":"Otlu peynir ve kavurma.",
+  "Nevşehir":"Kapadokya'nın meşhur testi kebabı.",
+  "Niğde":"Niğde tava ve bulgur pilavı.",
+  "Ordu":"Karadeniz pidesi ve kuymak (mıhlama).",
+  "Rize":"Çay kültürü, mıhlama (kuymak) ve karalahana yemekleri.",
+  "Sakarya":"Sakarya köftesi.",
+  "Samsun":"Bafra pidesi ve Vakfıkebir ekmeği.",
+  "Siirt":"Siirt büryanı ve perde pilavı.",
+  "Sinop":"Hamsi çeşitleri ve Sinop mantısı.",
+  "Sivas":"Sivas köftesi ve çiriş.",
+  "Tekirdağ":"Tekirdağ köftesi; rakı-balık kültürü.",
+  "Tokat":"Tokat kebabı ve testi kebabı.",
+  "Trabzon":"Karadeniz pidesi, kuymak ve hamsi çeşitleri.",
+  "Tunceli":"Munzur alabalığı ve kuzu eti yemekleri.",
+  "Şanlıurfa":"Çiğ köfte, lahmacun ve Urfa kebabı.",
+  "Uşak":"Uşak kebabı ve üzüm.",
+  "Van":"Meşhur Van kahvaltısı — otlu peynir, bal ve kaymak.",
+  "Yozgat":"Yozgat testi kebabı ve çörek.",
+  "Zonguldak":"Karadeniz pidesi ve madenci mutfağının köy yemekleri.",
+  "Aksaray":"Aksaray ciğer şiş.",
+  "Bayburt":"Bayburt pilavı ve kovi.",
+  "Karabük":"Safranbolu lokumu ve höşmerim.",
+  "Kırıkkale":"Yöresel köy pidesi ve sade ev yemekleri.",
+  "Batman":"Kaburga dolması ve çiğ köfte.",
+  "Şırnak":"Otlu peynir ve kavut.",
+  "Bartın":"Bartın pidesi; Karadeniz mutfağı.",
+  "Ardahan":"Ardahan balı ve çeçil peyniri.",
+  "Iğdır":"Meşhur Iğdır kaysısı ve dut pekmezi.",
+  "Yalova":"Zeytinyağlı yemekler ve taze kivi.",
+  "Karaman":"Divle tulum peyniri.",
+  "Kilis":"Kilis köfte ve zeytinyağı ağırlıklı mutfak.",
+  "Osmaniye":"Osmaniye yufkası ve yer fıstığı.",
+  "Düzce":"Taze fındık ve Karadeniz mutfağı."
+};
+
+// Ana sayfada öne çıkarılacak "şaşırtan keşifler" — gerçek tesis adına göre eşleştirilir.
+const FEATURED_PICKS = [
+  {ad:"Sayıştay Başkanlığı Eğitim ve Dinlenme Tesisleri", emoji:"🏖️", blurb:"3 havuzlu (aquapark dahil), plajlı — Türkiye'nin denetim kurumunun gizli tatil köyü."},
+  {ad:"TRT Lara Kampı", emoji:"📺", blurb:"Lara/Kundu'nun lüks otelleri arasına sıkışmış, devlet televizyonunun plaj kampı."},
+  {ad:"Nafiz Yürekli Uygulama Oteli", emoji:"🏞️", blurb:"Eğirdir Gölü manzaralı, '5 yıldızlı otelle yarışır' yorumları alan bir öğrenci işletmesi."},
+  {ad:"Hazine ve Maliye Bakanlığı Beyazıt Eğitim Tesisi ve Konukevi", emoji:"🕌", blurb:"Kapalıçarşı'nın karşısında — Büyükada'daki tatil tesisinin rezervasyonu da buradan yapılıyor."},
+  {ad:"TAKAV Sosyal Tesisleri (Tapu Kadastro Vakfı)", emoji:"🏛️", blurb:"Sultanahmet'in göbeğinde, Ayasofya'ya yürüme mesafesinde bir kamu misafirhanesi."},
+  {ad:"Yol-İş Sendikası Ankara Kızılay Konukevi", emoji:"🤝", blurb:"Bir işçi sendikasının Kızılay'ın tam ortasında kendi konukevi var, kimse bilmiyor."},
+  {ad:"Muradiye Uygulama Oteli", emoji:"🎓", blurb:"Türkiye'nin 1981'de açılan ilk öğretmenevi binası — bugün otelcilik öğrencileri işletiyor."},
+  {ad:"Şanlıurfa Çevre, Şehircilik ve İklim Değişikliği İl Müdürlüğü Misafirhanesi", emoji:"⭐", blurb:"Bir il müdürlüğü misafirhanesi için inanılmaz: '4 yıldızlı otelle kıyaslanabilir' yorumları."}
+];
 
 /* ---------- State ---------- */
 let ALL = [];
@@ -724,6 +984,42 @@ function renderStatsAndFilters(){
   ilSel.innerHTML = '<option value="">Tüm İller</option>' + iller.map(i=>`<option value="${i}">${i}</option>`).join("");
   const katSel = document.getElementById("katFilter");
   katSel.innerHTML = '<option value="">Tüm Türler</option>' + kategoriler.map(k=>`<option value="${k}">${k}</option>`).join("");
+
+  // Kategori renk lejandı — hangi renk hangi tesis türünü temsil ediyor
+  const legend = document.getElementById("kategoriLejand");
+  if(legend){
+    legend.innerHTML = kategoriler.map(k=>{
+      const renk = KATEGORI_RENK[k] || KATEGORI_RENK["Diğer"];
+      return `<span class="kat-item"><span class="kat-dot" style="background:${renk};"></span>${k}</span>`;
+    }).join("");
+  }
+
+  renderKesifler();
+}
+
+function renderKesifler(){
+  const strip = document.getElementById("kesiflerStrip");
+  if(!strip) return;
+  const cards = FEATURED_PICKS
+    .map(p=>{
+      const t = ALL.find(x=>x.ad === p.ad);
+      if(!t) return null;
+      return `<div class="kesif-card" data-id="${t.id}">
+        <span class="kesif-emoji">${p.emoji}</span>
+        <h4>${t.ad}</h4>
+        <p class="kesif-kurum">${t.kurum}</p>
+        <p class="kesif-blurb">${p.blurb}</p>
+      </div>`;
+    })
+    .filter(Boolean);
+  if(cards.length === 0){
+    document.getElementById("kesiflerSection").classList.add("hidden");
+    return;
+  }
+  strip.innerHTML = cards.join("");
+  strip.querySelectorAll(".kesif-card").forEach(el=>{
+    el.addEventListener("click", ()=> openDetail(el.dataset.id));
+  });
 }
 
 /* ---------- Filtering ---------- */
@@ -765,23 +1061,26 @@ function renderList(){
     wrap.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><h3>Sonuç bulunamadı</h3><p>Arama veya filtreleri değiştirip tekrar dene.</p></div>`;
     return;
   }
-  wrap.innerHTML = list.map((t,idx)=>`
-    <article class="ticket" data-id="${t.id}">
+  wrap.innerHTML = list.map((t,idx)=>{
+    const renk = KATEGORI_RENK[t.kategori] || KATEGORI_RENK["Diğer"];
+    return `
+    <article class="ticket" data-id="${t.id}" style="border-left:4px solid ${renk}; animation-delay:${Math.min(idx*0.025, 0.5)}s;">
       <div class="ticket-perf"></div>
       <div class="ticket-body">
-        <div class="stamp">${KATEGORI_ICON[t.kategori] || "🏛️"}</div>
+        <div class="stamp" style="border-color:${renk}; color:${renk};">${KATEGORI_ICON[t.kategori] || "🏛️"}</div>
         <h3>${t.ad || "—"}${(sortByDistance && t._distance != null) ? `<span class="dist-badge">${t._distance.toFixed(1)} km</span>` : ""}</h3>
         <p class="kurum">${t.kurum || ""}</p>
         <p class="loc">${t.il || ""}${t.ilce ? " · " + t.ilce : ""}</p>
-        <span class="kategori-badge">${t.kategori || "Diğer"}</span>
+        <span class="kategori-badge" style="background:${renk};">${t.kategori || "Diğer"}</span>
       </div>
       <div class="ticket-perf"></div>
       <div class="ticket-foot">
         <span class="serial mono">NO ${String(idx+1).padStart(4,"0")}</span>
-        <button class="detay-btn" data-id="${t.id}">Detay →</button>
+        <button class="detay-btn" data-id="${t.id}" style="color:${renk};">Detay →</button>
       </div>
     </article>
-  `).join("");
+  `;
+  }).join("");
 
   wrap.querySelectorAll(".detay-btn").forEach(btn=>{
     btn.addEventListener("click", ()=> openDetail(btn.dataset.id));
@@ -802,7 +1101,10 @@ function renderMap(){
   markersLayer.clearLayers();
   const list = getFiltered().filter(t=>t.lat && t.lng);
   list.forEach(t=>{
-    const m = L.marker([parseFloat(t.lat), parseFloat(t.lng)]).addTo(markersLayer);
+    const renk = KATEGORI_RENK[t.kategori] || KATEGORI_RENK["Diğer"];
+    const m = L.circleMarker([parseFloat(t.lat), parseFloat(t.lng)], {
+      radius: 8, color: "#fff", weight: 2, fillColor: renk, fillOpacity: 0.95
+    }).addTo(markersLayer);
     const distLine = (sortByDistance && t._distance != null) ? `<br><b>${t._distance.toFixed(1)} km</b> uzakta` : "";
     m.bindPopup(`<b>${t.ad}</b><br>${t.kurum || ""}<br>${t.il || ""} ${t.ilce || ""}${distLine}<br><a href="#" data-id="${t.id}" class="map-detail-link">Detayı gör</a>`);
     m.on("popupopen", ()=>{
@@ -828,16 +1130,18 @@ function openDetail(id){
   if(!t) return;
   const overlay = document.getElementById("detailOverlay");
   const mapsLink = (t.lat && t.lng) ? `https://www.google.com/maps?q=${t.lat},${t.lng}` : null;
+  const renk = KATEGORI_RENK[t.kategori] || KATEGORI_RENK["Diğer"];
   overlay.innerHTML = `
-    <div class="modal-box">
+    <div class="modal-box" style="border-top-color:${renk};">
       <button class="modal-close" id="modalCloseBtn">&times;</button>
       <div class="inner">
         <h2>${t.ad || ""}</h2>
-        <p class="m-kurum">${t.kurum || ""} · <span class="kategori-badge">${t.kategori || "Diğer"}</span></p>
+        <p class="m-kurum">${t.kurum || ""} · <span class="kategori-badge" style="background:${renk};">${t.kategori || "Diğer"}</span></p>
         <div class="m-row"><span class="m-label">İl / İlçe</span><span class="m-val">${t.il || "—"}${t.ilce ? " / " + t.ilce : ""}</span></div>
+        ${YORESEL_YEMEK[t.il] ? `<div class="m-row"><span class="m-label">🍽️ Bölgede Ne Yenir?</span><span class="m-val">${YORESEL_YEMEK[t.il]}</span></div>` : ""}
         <div class="m-row"><span class="m-label">Adres</span><span class="m-val">${t.adres || "—"}</span></div>
-        <div class="m-row"><span class="m-label">Telefon</span><span class="m-val">${t.tel || "—"}</span></div>
-        <div class="m-row"><span class="m-label">E-posta</span><span class="m-val">${t.eposta || "—"}</span></div>
+        <div class="m-row"><span class="m-label">Telefon</span><span class="m-val">${t.tel ? `<a href="tel:${t.tel.replace(/\s/g,'')}">${t.tel}</a>` : "—"}</span></div>
+        <div class="m-row"><span class="m-label">E-posta</span><span class="m-val">${t.eposta ? `<a href="mailto:${t.eposta}">${t.eposta}</a>` : "—"}</span></div>
         <div class="m-row"><span class="m-label">Kimler Kullanır</span><span class="m-val">${t.kimler || "—"}</span></div>
         <div class="m-row"><span class="m-label">Ücret Notu</span><span class="m-val">${t.ucret || "—"}</span></div>
         ${t.aciklama ? `<div class="m-row"><span class="m-label">Açıklama</span><span class="m-val">${t.aciklama}</span></div>` : ""}
